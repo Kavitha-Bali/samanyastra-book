@@ -1,0 +1,47 @@
+{% extends 'books/panel/base.html' %}
+{% block title %}Users – Samanyastra Panel{% endblock %}
+{% block topbar_title %}Users{% endblock %}
+{% block nav_users %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="fas fa-users me-2" style="color:#6366f1;"></i><span>Users</span></h1>
+</div>
+
+<div class="table-card">
+  <div class="table-card-header users">
+    <h2><i class="fas fa-list me-2"></i>All Users ({{ users.count }})</h2>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Username</th><th>Email</th><th>Joined</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="color:#94a3b8;">{{ forloop.counter }}</td>
+          <td><strong><i class="fas fa-user-circle me-1 text-muted"></i>{{ u.username }}</strong></td>
+          <td>{{ u.email|default:"—" }}</td>
+          <td><i class="fas fa-calendar-alt me-1 text-muted"></i>{{ u.date_joined|date:"d M Y" }}</td>
+          <td>
+            {% if u.is_active %}
+              <span class="badge badge-green"><i class="fas fa-circle me-1" style="font-size:0.5rem;"></i>Active</span>
+            {% else %}
+              <span class="badge badge-red"><i class="fas fa-circle me-1" style="font-size:0.5rem;"></i>Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'panel-user-delete' u.id %}" class="btn btn-danger btn-sm"><i class="fas fa-trash me-1"></i>Delete</a>
+          </td>
+        </tr>
+        {% empty %}
+          <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;"><i class="fas fa-inbox me-2"></i>No users found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

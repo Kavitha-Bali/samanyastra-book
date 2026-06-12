@@ -1,0 +1,43 @@
+{% extends 'books/panel/base.html' %}
+{% block title %}{% if promo %}Edit{% else %}Add{% endif %} Promo – Panel{% endblock %}
+{% block topbar_title %}{% if promo %}Edit Promo{% else %}Add Promo{% endif %}{% endblock %}
+{% block nav_promos %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>
+    {% if promo %}<i class="fas fa-edit me-2" style="color:#f59e0b;"></i>Edit{% else %}<i class="fas fa-plus me-2" style="color:#10b981;"></i>Add{% endif %}
+    <span>Promo Code</span>
+  </h1>
+  <a href="{% url 'panel-promos' %}" class="btn btn-primary"><i class="fas fa-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="form-card">
+  <div class="form-card-header">
+    <h2><i class="fas fa-tag me-2"></i>{% if promo %}Update Promo Code{% else %}New Promo Code{% endif %}</h2>
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-body">
+      <div class="field-group">
+        <label><i class="fas fa-ticket-alt me-1"></i>Promo Code</label>
+        <input type="text" name="code" value="{{ promo.code|default:'' }}" placeholder="e.g. SAVE20" required/>
+      </div>
+      <div class="form-row-2">
+        <div class="field-group">
+          <label><i class="fas fa-percentage me-1"></i>Discount (%)</label>
+          <input type="number" step="0.01" name="discount_percentage" value="{{ promo.discount_percentage|default:'' }}" placeholder="e.g. 20" required/>
+        </div>
+        <div class="field-group">
+          <label><i class="fas fa-calendar-alt me-1"></i>Expiration Date</label>
+          <input type="date" name="expiration_date" value="{{ promo.expiration_date|default:'' }}" required/>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-success"><i class="fas fa-save me-1"></i>{% if promo %}Update{% else %}Save{% endif %}</button>
+      <a href="{% url 'panel-promos' %}" class="btn btn-primary"><i class="fas fa-times me-1"></i>Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

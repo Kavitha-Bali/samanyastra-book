@@ -1,0 +1,30 @@
+{% extends 'books/panel/base.html' %}
+{% block title %}Delete User – Panel{% endblock %}
+{% block topbar_title %}Delete User{% endblock %}
+{% block nav_users %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="fas fa-user-times me-2" style="color:#ef4444;"></i>Delete <span>User</span></h1>
+</div>
+
+<div class="confirm-card">
+  <div class="confirm-card-header">
+    <h2><i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion</h2>
+  </div>
+  <div class="confirm-body">
+    <p>Are you sure you want to delete the user:</p>
+    <br/>
+    <p><i class="fas fa-user-circle me-2 text-muted"></i><strong>{{ del_user.username }}</strong></p>
+    <br/>
+    <p style="color:#ef4444;"><i class="fas fa-exclamation-circle me-1"></i>This will permanently delete the user and all their data.</p>
+  </div>
+  <div class="confirm-actions">
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i>Yes, Delete</button>
+    </form>
+    <a href="{% url 'panel-users' %}" class="btn btn-primary"><i class="fas fa-times me-1"></i>Cancel</a>
+  </div>
+</div>
+{% endblock %}

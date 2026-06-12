@@ -1,0 +1,568 @@
+{% extends 'books/panel/base.html' %}
+{% block title %}{% if book %}Edit{% else %}Add{% endif %} Book – Panel{% endblock %}
+{% block topbar_title %}{% if book %}Edit Book{% else %}Add Book{% endif %}{% endblock %}
+{% block nav_books %}active{% endblock %}
+
+{% block content %}
+<style>
+  .book-form-wrap { display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; align-items: start; }
+
+  /* ── Section card ── */
+  .form-section {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 1.2rem;
+  }
+  .form-section-header {
+    background: linear-gradient(90deg, #4f46e5, #7c3aed);
+    padding: 0.85rem 1.2rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .form-section-header h3 { color: #fff; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  .form-section-body { padding: 1.2rem; }
+
+  /* ── Fields ── */
+  .fg { margin-bottom: 1rem; }
+  .fg label { display: block; font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px; }
+  .fg input, .fg textarea, .fg select {
+    width: 100%; padding: 0.6rem 0.9rem;
+    border: 2px solid #e2e8f0; border-radius: 8px;
+    font-size: 0.88rem; font-family: 'Inter', sans-serif;
+    color: #1e293b; outline: none; transition: border 0.2s, box-shadow 0.2s;
+    background: #f8fafc;
+  }
+  .fg input:focus, .fg textarea:focus, .fg select:focus {
+    border-color: #6366f1; background: #fff;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  }
+  .fg textarea { resize: vertical; min-height: 90px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  /* ── Cover Upload ── */
+  .cover-upload-box {
+    border: 2px dashed #c7d2fe;
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fafafe;
+    position: relative;
+  }
+  .cover-upload-box:hover { border-color: #6366f1; background: #f0f0ff; }
+  .cover-upload-box.has-preview { border-color: #10b981; background: #f0fdf4; }
+  .cover-preview-img {
+    width: 100%; max-height: 200px; object-fit: cover;
+    border-radius: 8px; margin-bottom: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: none;
+  }
+  .cover-upload-icon { font-size: 2.2rem; margin-bottom: 0.3rem; }
+  .cover-upload-text { font-size: 0.82rem; font-weight: 600; color: #6366f1; }
+  .cover-upload-hint { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; }
+  .cover-change-btn {
+    display: none;
+    margin-top: 0.5rem;
+    font-size: 0.75rem; font-weight: 600;
+    color: #6366f1; cursor: pointer; text-decoration: underline;
+  }
+
+  /* ── File Upload ── */
+  .file-drop-zone {
+    border: 2px dashed #a5b4fc;
+    border-radius: 12px;
+    padding: 1.4rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fafafe;
+  }
+  .file-drop-zone:hover, .file-drop-zone.drag-over { border-color: #6366f1; background: #ede9fe; }
+  .file-drop-zone.has-file { border-color: #10b981; background: #f0fdf4; }
+  .file-drop-icon { font-size: 2.5rem; margin-bottom: 0.4rem; }
+  .file-drop-text { font-size: 0.85rem; font-weight: 700; color: #6366f1; }
+  .file-drop-hint { font-size: 0.72rem; color: #94a3b8; margin-top: 3px; }
+  .file-info {
+    display: none;
+    align-items: center; gap: 0.6rem;
+    background: #d1fae5; border-radius: 8px;
+    padding: 0.6rem 0.8rem; margin-top: 0.6rem;
+    font-size: 0.8rem; font-weight: 600; color: #065f46;
+  }
+  .file-info .file-remove {
+    margin-left: auto; cursor: pointer;
+    color: #ef4444; font-size: 1rem; font-weight: 800;
+  }
+
+  /* ── Existing file ── */
+  .existing-file {
+    display: flex; align-items: center; gap: 0.6rem;
+    background: #dbeafe; border-radius: 8px;
+    padding: 0.6rem 0.8rem; margin-top: 0.5rem;
+    font-size: 0.8rem; font-weight: 600; color: #1e40af;
+  }
+
+  /* ── Action Buttons ── */
+  .form-actions-bar {
+    display: flex; gap: 0.8rem; align-items: center;
+    padding: 1.2rem 1.4rem;
+    background: linear-gradient(90deg, #f8fafc, #eef2ff);
+    border: 1px solid #c7d2fe;
+    border-radius: 12px;
+    margin-top: 1.2rem;
+    flex-wrap: wrap;
+  }
+  .btn-save {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, #10b981, #047857);
+    color: #fff; border: none; border-radius: 10px;
+    padding: 11px 28px; font-size: 0.92rem; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    box-shadow: 0 4px 14px rgba(16,185,129,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+    text-decoration: none;
+  }
+  .btn-save:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16,185,129,0.45); }
+  .btn-save:active { transform: translateY(0); }
+
+  .btn-cancel {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #fff; color: #475569;
+    border: 2px solid #cbd5e1; border-radius: 10px;
+    padding: 11px 24px; font-size: 0.92rem; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    text-decoration: none; transition: all 0.15s;
+  }
+  .btn-cancel:hover { background: #f1f5f9; border-color: #94a3b8; color: #1e293b; }
+
+  .btn-reset {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; color: #94a3b8;
+    border: none; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; margin-left: auto;
+    font-family: 'Inter', sans-serif;
+    transition: color 0.15s;
+  }
+  .btn-reset:hover { color: #ef4444; }
+
+  /* ── Sidebar summary ── */
+  .preview-card {
+    background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    position: sticky; top: 80px;
+  }
+  .preview-card-header {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    padding: 0.85rem 1.2rem;
+  }
+  .preview-card-header h3 { color: #fff; font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .preview-card-body { padding: 1.2rem; }
+  .preview-thumb {
+    width: 100%; aspect-ratio: 2/3; object-fit: cover;
+    border-radius: 10px; background: linear-gradient(160deg,#e0e7ff,#c7d2fe);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3rem; margin-bottom: 0.8rem; overflow: hidden;
+  }
+  .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .preview-title { font-size: 0.95rem; font-weight: 800; color: #1e293b; margin-bottom: 2px; }
+  .preview-author { font-size: 0.8rem; color: #64748b; font-style: italic; margin-bottom: 6px; }
+  .preview-price { font-size: 1.1rem; font-weight: 800; color: #10b981; }
+  .preview-meta { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
+
+  @media (max-width: 900px) {
+    .book-form-wrap { grid-template-columns: 1fr; }
+    .preview-card { position: static; }
+  }
+</style>
+
+<div class="page-header">
+  <h1>
+    {% if book %}<i class="fas fa-pen me-2" style="color:#f59e0b;"></i>Edit <span>Book</span>
+    {% else %}<i class="fas fa-plus me-2" style="color:#6366f1;"></i>Add <span>Book</span>{% endif %}
+  </h1>
+  <a href="{% url 'panel-books' %}" class="btn btn-back"><i class="fas fa-arrow-left me-1"></i>Back to Books</a>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="bookForm">
+{% csrf_token %}
+<div class="book-form-wrap">
+
+  <!-- LEFT: Form Fields -->
+  <div>
+
+    <!-- Basic Info -->
+    <div class="form-section">
+      <div class="form-section-header"><h3><i class="fas fa-book me-2"></i>Book Information</h3></div>
+      <div class="form-section-body">
+        <div class="row2">
+          <div class="fg">
+            <label>Book Name *</label>
+            <input type="text" name="name" id="f_name" value="{{ book.name|default:'' }}" placeholder="e.g. Python Basics" required/>
+          </div>
+          <div class="fg">
+            <label>Title *</label>
+            <input type="text" name="title" id="f_title" value="{{ book.title|default:'' }}" placeholder="Full display title" required oninput="updatePreview()"/>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="fg">
+            <label>Author *</label>
+            <input type="text" name="author" id="f_author" value="{{ book.author|default:'' }}" placeholder="Author name" required oninput="updatePreview()"/>
+          </div>
+          <div class="fg">
+            <label>Language *</label>
+            <input type="text" name="language" value="{{ book.language|default:'' }}" placeholder="e.g. English, Tamil" required/>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Description *</label>
+          <textarea name="description" placeholder="Write a short description about the book…" required>{{ book.description|default:'' }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Publishing Details -->
+    <div class="form-section">
+      <div class="form-section-header"><h3><i class="fas fa-calendar-alt me-2"></i>Publishing Details</h3></div>
+      <div class="form-section-body">
+        <div class="row2">
+          <div class="fg">
+            <label>ISBN *</label>
+            <input type="text" name="isbn" value="{{ book.isbn|default:'' }}" placeholder="13-digit ISBN" required/>
+          </div>
+          <div class="fg">
+            <label>Pages *</label>
+            <input type="number" name="pages" value="{{ book.pages|default:'' }}" placeholder="e.g. 320" required/>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="fg">
+            <label>Price (₹) *</label>
+            <input type="number" step="0.01" name="amount" id="f_amount" value="{{ book.amount|default:'' }}" placeholder="e.g. 299.00" required oninput="updatePreview()"/>
+          </div>
+          <div class="fg">
+            <label>Published Date *</label>
+            <input type="date" name="published_date" value="{{ book.published_date|default:'' }}" required/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Tags -->
+    <div class="form-section">
+      <div class="form-section-header"><h3><i class="fas fa-hashtag me-2"></i>Category Tags</h3></div>
+      <div class="form-section-body">
+        <div class="fg">
+          <label>Select or type tags to categorise this book</label>
+
+          <!-- Predefined genre presets -->
+          <div class="tag-presets" id="tagPresets">
+            {% for genre in genres %}
+            <button type="button" class="tag-preset-btn" onclick="togglePresetTag(this, '{{ genre }}')">
+              <span style="color:#4895ef;font-weight:900;">#</span>{{ genre }}
+            </button>
+            {% endfor %}
+          </div>
+
+          <!-- Tag chip input -->
+          <div class="tag-input-wrap mt-3" id="tagInputWrap" onclick="document.getElementById('tagTextInput').focus()">
+            <div id="tagChips"></div>
+            <input type="text" id="tagTextInput" class="tag-text-input"
+              placeholder="Type a tag and press Enter or Space…"
+              oninput="handleTagInput(event)"
+              onkeydown="handleTagKeydown(event)"/>
+          </div>
+          <p style="font-size:0.72rem;color:#94a3b8;margin-top:5px;">
+            <i class="fas fa-info-circle me-1"></i>
+            Click a genre above, or type your own tag and press <kbd>Enter</kbd> / <kbd>Space</kbd>. Press <kbd>Backspace</kbd> to remove the last tag.
+          </p>
+          <!-- Hidden field that stores the actual comma-separated tags value -->
+          <input type="hidden" name="tags" id="tagsHidden" value="{{ book.tags|default:'' }}"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cover Image Upload -->
+    <div class="form-section">
+      <div class="form-section-header"><h3><i class="fas fa-image me-2"></i>Cover Image</h3></div>
+      <div class="form-section-body">
+        <div class="row2">
+          <div class="fg">
+            <label>Upload Cover Image</label>
+            <div class="cover-upload-box" id="coverUploadBox" onclick="document.getElementById('coverInput').click()">
+              <img id="coverPreviewImg" class="cover-preview-img" src="" alt="Cover Preview"/>
+              <div id="coverUploadPlaceholder">
+                <div class="cover-upload-icon"><i class="fas fa-cloud-upload-alt" style="font-size:2.2rem;color:#6366f1;"></i></div>
+                <div class="cover-upload-text">Click to choose image</div>
+                <div class="cover-upload-hint">JPG, PNG, WEBP — Max 5MB</div>
+              </div>
+              <div class="cover-change-btn" id="coverChangeBtn"><i class="fas fa-sync-alt me-1"></i> Change Image</div>
+            </div>
+            <input type="file" id="coverInput" name="cover_image" accept="image/*" style="display:none;" onchange="previewCover(this)"/>
+            {% if book.cover_image %}
+              <div class="existing-file" style="margin-top:6px;">
+                <img src="{{ book.cover_image.url }}" style="height:36px;border-radius:4px;"/>
+                <span>Current: {{ book.cover_image.name|slice:"7:" }}</span>
+              </div>
+            {% endif %}
+          </div>
+          <div class="fg">
+            <label>Thumbnail URL <span style="font-size:0.68rem;color:#94a3b8;">(optional)</span></label>
+            <input type="url" name="thumb" value="{{ book.thumb|default:'' }}" placeholder="https://example.com/thumb.jpg" oninput="updateThumbPreview(this.value)"/>
+            {% if book.thumb %}
+              <div style="margin-top:6px;">
+                <img src="{{ book.thumb }}" style="height:50px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.1);" id="thumbPreview"/>
+              </div>
+            {% else %}
+              <img src="" id="thumbPreview" style="display:none;height:50px;border-radius:6px;margin-top:6px;"/>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Book File Upload -->
+    <div class="form-section">
+      <div class="form-section-header"><h3><i class="fas fa-file-upload me-2"></i>Book File Upload</h3></div>
+      <div class="form-section-body">
+        <div class="fg">
+          <label>Upload Book File <span style="font-size:0.68rem;color:#94a3b8;">PDF, EPUB, MOBI, DOC — Max 50MB</span></label>
+          <div class="file-drop-zone" id="fileDropZone"
+            onclick="document.getElementById('bookFileInput').click()"
+            ondragover="fileDragOver(event)"
+            ondragleave="fileDragLeave(event)"
+            ondrop="fileDrop(event)">
+            <div class="file-drop-icon" id="fileDropIcon"><i class="fas fa-folder-open" style="font-size:2.5rem;color:#6366f1;"></i></div>
+            <div class="file-drop-text" id="fileDropText">Click to upload or drag & drop</div>
+            <div class="file-drop-hint">Supported: PDF, EPUB, MOBI, DOC, DOCX</div>
+            <input type="file" id="bookFileInput" name="file" accept=".pdf,.epub,.mobi,.doc,.docx" style="display:none;" onchange="showFileInfo(this)"/>
+          </div>
+          <div class="file-info" id="fileInfo">
+            <i class="fas fa-file-pdf"></i>
+            <span id="fileInfoName"></span>
+            <span id="fileInfoSize" style="color:#94a3b8;font-weight:400;"></span>
+            <span class="file-remove" onclick="clearFile()" title="Remove"><i class="fas fa-times"></i></span>
+          </div>
+          {% if book.file %}
+            <div class="existing-file" style="margin-top:6px;">
+              <i class="fas fa-file-alt"></i>
+              <span>{{ book.file.name|slice:"6:" }}</span>
+              <a href="{{ book.file.url }}" target="_blank" style="margin-left:auto;color:#3b82f6;font-weight:700;font-size:0.75rem;text-decoration:none;">Download ↗</a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="form-actions-bar">
+      <button type="submit" class="btn-save">
+        <i class="fas fa-save"></i>
+        {% if book %}Update Book{% else %}Publish Book{% endif %}
+      </button>
+      <a href="{% url 'panel-books' %}" class="btn-cancel">
+        <i class="fas fa-times"></i> Cancel
+      </a>
+      <button type="reset" class="btn-reset" onclick="resetForm()">
+        <i class="fas fa-sync-alt"></i> Reset Form
+      </button>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Live Preview Card -->
+  <div>
+    <div class="preview-card">
+      <div class="preview-card-header"><h3><i class="fas fa-eye me-2"></i>Live Preview</h3></div>
+      <div class="preview-card-body">
+        <div class="preview-thumb" id="previewThumbBox">
+          <img id="previewThumbImg" src="{% if book.cover_image %}{{ book.cover_image.url }}{% endif %}" style="{% if not book.cover_image %}display:none;{% endif %}width:100%;height:100%;object-fit:cover;"/>
+          <span id="previewThumbEmoji" style="{% if book.cover_image %}display:none;{% endif %}"><i class="fas fa-book" style="font-size:3rem;color:#6366f1;opacity:0.4;"></i></span>
+        </div>
+        <div class="preview-title" id="previewTitle">{{ book.title|default:'Book Title' }}</div>
+        <div class="preview-author" id="previewAuthor">{{ book.author|default:'Author Name' }}</div>
+        <div class="preview-price" id="previewPrice">{% if book.amount %}₹{{ book.amount }}{% else %}₹0.00{% endif %}</div>
+        <div class="preview-meta" id="previewLang">{{ book.language|default:'Language' }}</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</form>
+
+<script>
+  // ─── Hashtag Tag Picker ───────────────────────────────────────
+  const tagsHidden   = document.getElementById('tagsHidden');
+  const tagChipsEl   = document.getElementById('tagChips');
+  const tagTextInput = document.getElementById('tagTextInput');
+
+  let tagSet = new Set(
+    (tagsHidden.value || '').split(',').map(t => t.trim()).filter(Boolean)
+  );
+
+  function renderChips() {
+    tagChipsEl.innerHTML = '';
+    tagSet.forEach(tag => {
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      chip.innerHTML = `<span class="tag-hash">#</span>${tag}<span class="tag-remove" onclick="removeTag('${tag}')" title="Remove">&times;</span>`;
+      tagChipsEl.appendChild(chip);
+    });
+    tagsHidden.value = [...tagSet].join(',');
+    syncPresetButtons();
+  }
+
+  function addTag(raw) {
+    const tag = raw.replace(/^#+/, '').trim();
+    if (tag && tag.length > 0 && tag.length <= 40) {
+      tagSet.add(tag);
+      renderChips();
+    }
+  }
+
+  function removeTag(tag) {
+    tagSet.delete(tag);
+    renderChips();
+  }
+
+  function handleTagKeydown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      const val = tagTextInput.value.trim();
+      if (val) { addTag(val); tagTextInput.value = ''; }
+    } else if (e.key === 'Backspace' && tagTextInput.value === '') {
+      const last = [...tagSet].pop();
+      if (last) removeTag(last);
+    }
+  }
+
+  function handleTagInput(e) {
+    // auto-add on comma
+    if (tagTextInput.value.endsWith(',')) {
+      const val = tagTextInput.value.slice(0, -1).trim();
+      if (val) { addTag(val); tagTextInput.value = ''; }
+    }
+  }
+
+  function togglePresetTag(btn, tag) {
+    if (tagSet.has(tag)) {
+      tagSet.delete(tag);
+    } else {
+      tagSet.add(tag);
+    }
+    renderChips();
+  }
+
+  function syncPresetButtons() {
+    document.querySelectorAll('.tag-preset-btn').forEach(btn => {
+      const genre = btn.textContent.replace(/^#/, '').trim();
+      btn.classList.toggle('active', tagSet.has(genre));
+    });
+  }
+
+  // init on page load
+  renderChips();
+
+  // ─── Live preview ─────────────────────────────────────────────
+  function updatePreview() {
+    const t = document.getElementById('f_title').value;
+    const a = document.getElementById('f_author').value;
+    const p = document.getElementById('f_amount').value;
+    if (t) document.getElementById('previewTitle').textContent = t;
+    if (a) document.getElementById('previewAuthor').textContent = a;
+    if (p) document.getElementById('previewPrice').textContent = '₹' + parseFloat(p).toFixed(2);
+  }
+
+  // Cover image preview
+  function previewCover(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.getElementById('coverPreviewImg');
+      const placeholder = document.getElementById('coverUploadPlaceholder');
+      const changeBtn = document.getElementById('coverChangeBtn');
+      const box = document.getElementById('coverUploadBox');
+      const previewImg = document.getElementById('previewThumbImg');
+      const previewEmoji = document.getElementById('previewThumbEmoji');
+
+      img.src = e.target.result;
+      img.style.display = 'block';
+      placeholder.style.display = 'none';
+      changeBtn.style.display = 'block';
+      box.classList.add('has-preview');
+
+      // update sidebar preview
+      previewImg.src = e.target.result;
+      previewImg.style.display = 'block';
+      previewEmoji.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Thumbnail URL preview
+  function updateThumbPreview(url) {
+    const img = document.getElementById('thumbPreview');
+    if (url) { img.src = url; img.style.display = 'block'; }
+    else { img.style.display = 'none'; }
+  }
+
+  // File upload
+  function showFileInfo(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const size = (file.size / (1024 * 1024)).toFixed(2);
+    document.getElementById('fileInfoName').textContent = file.name;
+    document.getElementById('fileInfoSize').textContent = size + ' MB';
+    document.getElementById('fileInfo').style.display = 'flex';
+    const zone = document.getElementById('fileDropZone');
+    zone.classList.add('has-file');
+    document.getElementById('fileDropIcon').innerHTML = '<i class="fas fa-check-circle" style="font-size:2.5rem;color:#10b981;"></i>';
+    document.getElementById('fileDropText').textContent = 'File selected!';
+  }
+
+  function clearFile() {
+    document.getElementById('bookFileInput').value = '';
+    document.getElementById('fileInfo').style.display = 'none';
+    const zone = document.getElementById('fileDropZone');
+    zone.classList.remove('has-file');
+    document.getElementById('fileDropIcon').innerHTML = '<i class="fas fa-folder-open" style="font-size:2.5rem;color:#6366f1;"></i>';
+    document.getElementById('fileDropText').textContent = 'Click to upload or drag & drop';
+  }
+
+  function fileDragOver(e) {
+    e.preventDefault();
+    document.getElementById('fileDropZone').classList.add('drag-over');
+  }
+  function fileDragLeave(e) {
+    document.getElementById('fileDropZone').classList.remove('drag-over');
+  }
+  function fileDrop(e) {
+    e.preventDefault();
+    document.getElementById('fileDropZone').classList.remove('drag-over');
+    const input = document.getElementById('bookFileInput');
+    input.files = e.dataTransfer.files;
+    showFileInfo(input);
+  }
+
+  // Reset
+  function resetForm() {
+    document.getElementById('coverPreviewImg').style.display = 'none';
+    document.getElementById('coverUploadPlaceholder').style.display = 'block';
+    document.getElementById('coverChangeBtn').style.display = 'none';
+    document.getElementById('coverUploadBox').classList.remove('has-preview');
+    clearFile();
+    document.getElementById('previewTitle').textContent = 'Book Title';
+    document.getElementById('previewAuthor').textContent = 'Author Name';
+    document.getElementById('previewPrice').textContent = '₹0.00';
+    document.getElementById('previewThumbImg').style.display = 'none';
+    const emojiEl = document.getElementById('previewThumbEmoji');
+    emojiEl.style.display = 'block';
+    emojiEl.innerHTML = '<i class="fas fa-book" style="font-size:3rem;color:#6366f1;opacity:0.4;"></i>';
+  }
+</script>
+{% endblock %}

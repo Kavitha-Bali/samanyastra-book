@@ -1,0 +1,193 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Samanyastra – Your Online Bookstore</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <link rel="stylesheet" href="{% static 'books/home.css' %}"/>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="/">Saman<span>yastra</span></a>
+
+  <div class="nav-center">
+    <form class="search-box" method="get" action="/">
+      <input type="text" name="q" placeholder="Search books, authors…" value="{{ request.GET.q }}"/>
+      <button type="submit"><i class="fas fa-search"></i></button>
+    </form>
+  </div>
+
+  <div class="nav-icons">
+    <a href="{% url 'user-cart' %}" title="Cart">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      {% if request.user.is_authenticated %}
+        <span class="cart-badge">{{ request.user.cart.count }}</span>
+      {% else %}
+        <span class="cart-badge">0</span>
+      {% endif %}
+    </a>
+    {% if request.user.is_authenticated %}
+      <a href="{% url 'user-home' %}" title="My Account">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </a>
+    {% else %}
+      <a href="{% url 'user-login' %}" title="Login">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </a>
+    {% endif %}
+    <div class="hamburger" onclick="toggleSearch()" title="Search">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile Search -->
+<div class="mobile-search" id="mobileSearch">
+  <form class="search-box" method="get" action="/">
+    <input type="text" name="q" placeholder="Search books…" value="{{ request.GET.q }}"/>
+    <button type="submit"><i class="fas fa-search"></i></button>
+  </form>
+</div>
+
+<!-- Messages -->
+{% if messages %}
+<div style="max-width:1200px;margin:0.8rem auto;padding:0 1.5rem;">
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'success' %}success{% elif msg.tags == 'error' %}danger{% else %}info{% endif %} alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+    {% if msg.tags == 'success' %}<i class="fas fa-check-circle"></i>
+    {% elif msg.tags == 'error' %}<i class="fas fa-exclamation-circle"></i>
+    {% else %}<i class="fas fa-info-circle"></i>{% endif %}
+    <span>{{ msg }}</span>
+    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-content">
+    <h1>Your Trusted Store for <span>Books</span></h1>
+    <p>Thousands of titles across every genre — at the best prices.</p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+      <a href="#books" class="hero-btn"><i class="fas fa-book-open me-2"></i>Browse Books</a>
+      {% if not request.user.is_authenticated %}
+        <a href="{% url 'user-register' %}" class="hero-btn" style="background:linear-gradient(135deg,#4ecdc4,#2980b9);"><i class="fas fa-user-plus me-2"></i>Register Free</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <span class="trust-item"><i class="fas fa-check-circle"></i> 10,000+ Books</span>
+  <span class="trust-item"><i class="fas fa-truck"></i> Free Delivery above ₹499</span>
+  <span class="trust-item"><i class="fas fa-lock"></i> Secure Payments</span>
+  <span class="trust-item"><i class="fas fa-undo"></i> Easy Returns</span>
+</div>
+
+<!-- BOOKS SECTION -->
+<div class="section-wrapper" id="books">
+  <div class="section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.6rem;flex-wrap:wrap;gap:1rem;">
+      <div class="section-title">Featured Books</div>
+      {% if request.user.is_authenticated %}
+        <a href="{% url 'user-home' %}" style="background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;padding:8px 20px;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;"><i class="fas fa-store me-1"></i>View Full Shop</a>
+      {% else %}
+        <a href="{% url 'user-login' %}" style="background:linear-gradient(135deg,#ff6b35,#c0392b);color:#fff;padding:8px 20px;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;"><i class="fas fa-sign-in-alt me-1"></i>Login to Buy</a>
+      {% endif %}
+    </div>
+
+    <div class="books-grid">
+      {% if books %}
+        {% for book in books %}
+        <div class="card">
+          {% if book.cover_image %}
+            <a href="{% if request.user.is_authenticated %}{% url 'user-book-detail' book.id %}{% else %}{% url 'user-login' %}{% endif %}">
+              <img class="card-thumb" src="{{ book.cover_image.url }}" alt="{{ book.title }}" loading="lazy"/>
+            </a>
+          {% elif book.thumb %}
+            <a href="{% if request.user.is_authenticated %}{% url 'user-book-detail' book.id %}{% else %}{% url 'user-login' %}{% endif %}">
+              <img class="card-thumb" src="{{ book.thumb }}" alt="{{ book.title }}" loading="lazy"/>
+            </a>
+          {% else %}
+            <a href="{% if request.user.is_authenticated %}{% url 'user-book-detail' book.id %}{% else %}{% url 'user-login' %}{% endif %}">
+              <div class="card-thumb-placeholder"><i class="fas fa-book" style="font-size:3rem;"></i></div>
+            </a>
+          {% endif %}
+
+          <div class="card-body">
+            <span class="card-badge">{{ book.language }}</span>
+            <a href="{% if request.user.is_authenticated %}{% url 'user-book-detail' book.id %}{% else %}{% url 'user-login' %}{% endif %}" class="card-title" style="text-decoration:none;color:inherit;">{{ book.title }}</a>
+            <div class="card-author">{{ book.author }}</div>
+            <div class="card-price-row">
+              <span class="card-price">₹{{ book.amount }}</span>
+              <span style="font-size:0.72rem;color:#f59e0b;"><i class="fas fa-star"></i> {{ book.avg_rating }}</span>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            {% if request.user.is_authenticated %}
+              {% if book.id in purchased_ids %}
+                <span class="btn btn-cart" style="cursor:default;opacity:0.7;"><i class="fas fa-check me-1"></i>Purchased</span>
+                <a href="{% url 'user-transactions' %}" class="btn btn-buy"><i class="fas fa-receipt me-1"></i>My Orders</a>
+              {% else %}
+                <form method="post" action="{% url 'home-add-cart' book.id %}" style="flex:1;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-cart" style="width:100%;">
+                    {% if book.id in cart_ids %}<i class="fas fa-check me-1"></i>In Cart{% else %}<i class="fas fa-cart-plus me-1"></i>Cart{% endif %}
+                  </button>
+                </form>
+                <form method="post" action="{% url 'home-buy-now' book.id %}" style="flex:1;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-buy" style="width:100%;"><i class="fas fa-bolt me-1"></i>Buy Now</button>
+                </form>
+              {% endif %}
+            {% else %}
+              <a href="{% url 'user-login' %}" class="btn btn-cart"><i class="fas fa-cart-plus me-1"></i>Cart</a>
+              <a href="{% url 'user-login' %}" class="btn btn-buy"><i class="fas fa-bolt me-1"></i>Buy Now</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="grid-column:1/-1;text-align:center;padding:3rem;color:#94a3b8;">
+          <i class="fas fa-book-open" style="font-size:3rem;margin-bottom:1rem;display:block;"></i>
+          <p style="font-size:1rem;">No books found. Try a different search.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Saman<span>yastra</span></div>
+  <div class="footer-tagline">Your trusted online bookstore — discover, read, grow.</div>
+  <div class="footer-links">
+    <a href="/"><i class="fas fa-home me-1"></i>Home</a>
+    <a href="{% url 'user-register' %}"><i class="fas fa-user-plus me-1"></i>Register</a>
+    <a href="{% url 'user-login' %}"><i class="fas fa-sign-in-alt me-1"></i>Login</a>
+    <a href="{% url 'user-cart' %}"><i class="fas fa-shopping-cart me-1"></i>Cart</a>
+    {% if request.user.is_staff %}
+      <a href="{% url 'panel-dashboard' %}"><i class="fas fa-cog me-1"></i>Admin Panel</a>
+    {% endif %}
+  </div>
+  <div class="footer-copy">&copy; 2025 <strong>Samanyastra</strong>. All rights reserved.</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function toggleSearch() {
+    document.getElementById('mobileSearch').classList.toggle('open');
+  }
+</script>
+</body>
+</html>

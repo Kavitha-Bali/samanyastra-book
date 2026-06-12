@@ -1,0 +1,158 @@
+{% extends 'books/user/base.html' %}
+{% block title %}{{ book.title }} – Samanyastra{% endblock %}
+
+{% block content %}
+<a href="{% url 'user-home' %}" class="d-inline-flex align-items-center gap-1 mb-3 text-decoration-none fw-semibold" style="color:#6366f1;font-size:0.85rem;">
+  <i class="fas fa-arrow-left"></i> Back to Shop
+</a>
+
+<div class="row g-4">
+  <!-- Cover -->
+  <div class="col-12 col-md-4 col-lg-3">
+    {% if book.cover_image %}
+      <img src="{{ book.cover_image.url }}" class="w-100 rounded-3 shadow" alt="{{ book.title }}" style="max-height:420px;object-fit:cover;"/>
+    {% elif book.thumb %}
+      <img src="{{ book.thumb }}" class="w-100 rounded-3 shadow" alt="{{ book.title }}" style="max-height:420px;object-fit:cover;"/>
+    {% else %}
+      <div class="rounded-3 d-flex align-items-center justify-content-center" style="aspect-ratio:2/3;background:linear-gradient(160deg,#e0e7ff,#c7d2fe);">
+        <i class="fas fa-book" style="font-size:5rem;color:#6366f1;opacity:0.5;"></i>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Details -->
+  <div class="col-12 col-md-8 col-lg-9">
+    <h1 style="font-size:1.8rem;font-weight:800;color:#1e293b;margin-bottom:0.3rem;">{{ book.title }}</h1>
+    <p style="color:#64748b;font-size:1rem;margin-bottom:0.8rem;">by <strong>{{ book.author }}</strong></p>
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <span class="badge rounded-pill px-3 py-2" style="background:#e0e7ff;color:#3730a3;font-size:0.78rem;">
+        <i class="fas fa-language me-1"></i>{{ book.language }}
+      </span>
+      <span class="badge rounded-pill px-3 py-2" style="background:#fef3c7;color:#92400e;font-size:0.78rem;">
+        <i class="fas fa-file-alt me-1"></i>{{ book.pages }} pages
+      </span>
+      <span class="badge rounded-pill px-3 py-2" style="background:#d1fae5;color:#065f46;font-size:0.78rem;">
+        <i class="fas fa-barcode me-1"></i>ISBN: {{ book.isbn }}
+      </span>
+      <span class="badge rounded-pill px-3 py-2" style="background:#fce7f3;color:#9d174d;font-size:0.78rem;">
+        <i class="fas fa-star me-1" style="color:#f59e0b;"></i>{{ book.avg_rating }}/5 ({{ book.ratings.count }} reviews)
+      </span>
+    </div>
+
+    <p style="color:#475569;line-height:1.7;margin-bottom:1.2rem;">{{ book.description }}</p>
+
+    <div style="font-size:1.8rem;font-weight:800;color:#10b981;margin-bottom:1.2rem;">₹{{ book.amount }}</div>
+
+    <div class="d-flex flex-wrap gap-2">
+      {% if purchased %}
+        <span class="px-3 py-2 rounded-pill fw-semibold d-inline-flex align-items-center gap-1" style="background:#d1fae5;color:#065f46;font-size:0.85rem;">
+          <i class="fas fa-check-circle"></i> Already Purchased
+        </span>
+        {% if book.file %}
+        <a href="{% url 'download-book' book.id %}" class="btn fw-bold text-white px-4" style="background:linear-gradient(135deg,#10b981,#059669);border:none;">
+          <i class="fas fa-download me-1"></i>Download Book
+        </a>
+        {% endif %}
+        <a href="{% url 'rate-book' book.id %}" class="btn fw-bold text-white px-4" style="background:linear-gradient(135deg,#f59e0b,#d97706);border:none;">
+          <i class="fas fa-star me-1"></i>Rate this Book
+        </a>
+        <!-- allow re-purchase -->
+        <button id="razorpayBtn" onclick="openRazorpay()" class="btn fw-bold text-white px-4" style="background:linear-gradient(135deg,#ff6b35,#c0392b);border:none;">
+          <i class="fas fa-bolt me-1"></i>Buy Again
+        </button>
+      {% else %}
+        {% if in_cart %}
+          <a href="{% url 'user-cart' %}" class="btn fw-bold text-white px-4" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">
+            <i class="fas fa-check me-1"></i>Go to Cart
+          </a>
+        {% else %}
+          <a href="{% url 'add-to-cart' book.id %}" class="btn fw-bold px-4" style="background:linear-gradient(135deg,#e0e7ff,#c7d2fe);color:#3730a3;border:2px solid #a5b4fc;">
+            <i class="fas fa-cart-plus me-1"></i>Add to Cart
+          </a>
+        {% endif %}
+        <button id="razorpayBtn" onclick="openRazorpay()" class="btn fw-bold text-white px-4" style="background:linear-gradient(135deg,#ff6b35,#c0392b);border:none;">
+          <i class="fas fa-bolt me-1"></i>Buy with Razorpay
+        </button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Ratings Section -->
+<div class="mt-5">
+  <h2 class="fw-bold mb-3" style="font-size:1.1rem;color:#1e293b;border-left:4px solid #ff6b35;padding-left:0.6rem;">
+    <i class="fas fa-comments me-2" style="color:#ff6b35;"></i>Customer Reviews
+  </h2>
+  {% for r in ratings %}
+  <div class="card border-0 shadow-sm mb-3 p-3" style="border-radius:10px;">
+    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+      <span class="fw-bold" style="color:#1e293b;"><i class="fas fa-user-circle me-1 text-muted"></i>{{ r.user.username }}</span>
+      <span style="color:#f59e0b;letter-spacing:2px;">
+        {% for i in "12345" %}{% if forloop.counter <= r.stars %}★{% else %}☆{% endif %}{% endfor %}
+      </span>
+      <span class="text-muted" style="font-size:0.75rem;"><i class="fas fa-calendar-alt me-1"></i>{{ r.rated_on|date:"d M Y" }}</span>
+    </div>
+    {% if r.review %}<p class="mb-0" style="color:#475569;font-size:0.88rem;">{{ r.review }}</p>{% endif %}
+  </div>
+  {% empty %}
+    <div class="text-center py-4 text-muted">
+      <i class="fas fa-comment-slash mb-2" style="font-size:2rem;display:block;"></i>
+      <p>No reviews yet. Be the first to review!</p>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+const CSRF       = '{{ csrf_token }}';
+const ORDER_URL  = '{% url "razorpay-create-order" book.id %}';
+const VERIFY_URL = '{% url "razorpay-verify-payment" book.id %}';
+
+async function openRazorpay() {
+  const btn = document.getElementById('razorpayBtn');
+  btn.disabled = true;
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Please wait...';
+
+  try {
+    const res   = await fetch(ORDER_URL, {method:'POST', headers:{'X-CSRFToken':CSRF,'Content-Type':'application/json'}, body:'{}'});
+    const order = await res.json();
+    if (order.error) { alert(order.error); btn.disabled=false; btn.innerHTML=origText; return; }
+
+    const options = {
+      key:         order.key,
+      amount:      order.amount,
+      currency:    order.currency,
+      name:        'Samanyastra',
+      description: order.book_title,
+      order_id:    order.order_id,
+      handler: async function(response) {
+        const vRes   = await fetch(VERIFY_URL, {
+          method: 'POST',
+          headers: {'X-CSRFToken':CSRF, 'Content-Type':'application/json'},
+          body: JSON.stringify({
+            razorpay_order_id:   response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature:  response.razorpay_signature,
+          }),
+        });
+        const result = await vRes.json();
+        if (result.success) { window.location.href = result.redirect; }
+        else { alert('Payment verification failed. Please contact support.'); }
+      },
+      prefill: { name: order.user_name, email: order.user_email },
+      theme:   { color: '#6366f1' },
+      modal:   { ondismiss: function() { btn.disabled=false; btn.innerHTML=origText; } },
+    };
+    new Razorpay(options).open();
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = origText;
+    alert('Something went wrong. Please try again.');
+  }
+}
+</script>
+{% endblock %}

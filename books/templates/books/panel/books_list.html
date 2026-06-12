@@ -1,0 +1,348 @@
+{% extends 'books/panel/base.html' %}
+{% block title %}Books – Samanyastra Panel{% endblock %}
+{% block topbar_title %}Books{% endblock %}
+{% block nav_books %}active{% endblock %}
+
+{% block content %}
+<style>
+  /* ── BANNER ── */
+  .bk-banner {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 45%, #0ea5e9 100%);
+    border-radius: 16px;
+    padding: 1.7rem 2rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 28px rgba(79,70,229,0.35);
+  }
+  .bk-banner::before {
+    content: '';
+    position: absolute;
+    width: 280px; height: 280px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+    right: -60px; top: -100px;
+    pointer-events: none;
+  }
+  .bk-banner::after {
+    content: '';
+    position: absolute;
+    width: 160px; height: 160px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+    right: 160px; bottom: -60px;
+    pointer-events: none;
+  }
+  .bk-banner-inner { position: relative; z-index: 1; }
+  .bk-eyebrow { font-size: 0.58rem; color: rgba(255,255,255,0.5); letter-spacing: 3px; text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem; }
+  .bk-banner-title { font-size: 1.55rem; font-weight: 800; color: #fff; letter-spacing: -0.4px; margin-bottom: 0.25rem; line-height: 1.2; }
+  .bk-banner-sub { font-size: 0.82rem; color: rgba(255,255,255,0.6); }
+  .bk-banner-actions { position: relative; z-index: 1; flex-shrink: 0; }
+  .btn-add-white {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.18);
+    border: 1.5px solid rgba(255,255,255,0.35);
+    backdrop-filter: blur(8px);
+    color: #fff; border-radius: 10px;
+    padding: 10px 20px; font-size: 0.85rem; font-weight: 700;
+    text-decoration: none; transition: all 0.2s;
+    font-family: inherit;
+  }
+  .btn-add-white:hover { background: rgba(255,255,255,0.28); transform: translateY(-2px); color: #fff; }
+  .btn-add-white .ba-icon {
+    width: 24px; height: 24px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; flex-shrink: 0;
+  }
+
+  /* ── STATS ROW ── */
+  .bk-stats { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .bk-stat-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.8rem 1.2rem;
+    display: flex; align-items: center; gap: 0.75rem;
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+    flex-shrink: 0;
+    min-width: 140px;
+  }
+  .bk-stat-icon {
+    width: 38px; height: 38px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+  }
+  .bk-stat-body .bk-stat-num { font-size: 1.35rem; font-weight: 800; color: #1e293b; line-height: 1; }
+  .bk-stat-body .bk-stat-lbl { font-size: 0.68rem; color: #94a3b8; font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ── TOOLBAR ── */
+  .bk-toolbar {
+    display: flex; align-items: center; gap: 0.7rem;
+    margin-bottom: 1.2rem; flex-wrap: wrap;
+  }
+  .bk-search-wrap {
+    display: flex; align-items: center; gap: 0.55rem;
+    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 9px;
+    padding: 0.52rem 1rem; flex: 1; max-width: 400px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+  }
+  .bk-search-wrap:focus-within { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+  .bk-search-wrap i { color: #94a3b8; font-size: 0.82rem; flex-shrink: 0; }
+  .bk-search-wrap input { border: none; outline: none; background: transparent; font-size: 0.85rem; color: #1e293b; font-family: inherit; width: 100%; }
+  .bk-search-wrap input::placeholder { color: #94a3b8; }
+  .bk-badge { background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; border-radius: 20px; padding: 4px 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+
+  /* ── TABLE ── */
+  .bk-num { color: #c4c9d4; font-size: 0.72rem; font-weight: 700; text-align: center; width: 40px; }
+  .bk-title-cell { display: flex; align-items: center; gap: 0.7rem; }
+  .bk-thumb { width: 40px; height: 56px; object-fit: cover; border-radius: 6px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(15,23,42,0.18); }
+  .bk-thumb-ph {
+    width: 40px; height: 56px; border-radius: 6px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; color: rgba(255,255,255,0.9);
+  }
+  /* Cycling gradient placeholders */
+  .bk-row:nth-child(6n+1) .bk-thumb-ph { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+  .bk-row:nth-child(6n+2) .bk-thumb-ph { background: linear-gradient(135deg, #0ea5e9, #06b6d4); }
+  .bk-row:nth-child(6n+3) .bk-thumb-ph { background: linear-gradient(135deg, #10b981, #059669); }
+  .bk-row:nth-child(6n+4) .bk-thumb-ph { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+  .bk-row:nth-child(6n+5) .bk-thumb-ph { background: linear-gradient(135deg, #f43f5e, #ec4899); }
+  .bk-row:nth-child(6n+6) .bk-thumb-ph { background: linear-gradient(135deg, #8b5cf6, #4f46e5); }
+
+  .bk-title-name { font-size: 0.85rem; font-weight: 700; color: #1e293b; line-height: 1.3; }
+  .bk-author { font-size: 0.72rem; color: #94a3b8; margin-top: 1px; }
+  .bk-price { font-size: 0.97rem; font-weight: 800; color: #059669; }
+  .bk-tag {
+    display: inline-flex; align-items: center;
+    background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe;
+    border-radius: 20px; padding: 2px 7px;
+    font-size: 0.64rem; font-weight: 700; white-space: nowrap;
+  }
+  .bk-hash { color: #818cf8; margin-right: 1px; }
+
+  /* row hover highlight */
+  tbody tr.bk-row { transition: background 0.12s; }
+  tbody tr.bk-row:hover { background: #f5f3ff; }
+
+  /* footer bar */
+  .bk-table-footer {
+    padding: 0.7rem 1.3rem;
+    border-top: 1px solid #f1f5f9;
+    background: #fafafa;
+    display: flex; align-items: center; justify-content: space-between;
+    border-radius: 0 0 16px 16px;
+  }
+  .bk-table-footer span { font-size: 0.75rem; color: #94a3b8; }
+
+  /* empty state */
+  .bk-empty-cell { text-align: center; padding: 3.5rem 2rem; }
+  .bk-empty-icon {
+    width: 72px; height: 72px; background: #eef2ff; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1rem; font-size: 1.8rem; color: #6366f1;
+  }
+</style>
+
+<!-- ── BANNER ── -->
+<div class="bk-banner">
+  <div class="bk-banner-inner">
+    <div class="bk-eyebrow">Content Management</div>
+    <div class="bk-banner-title"><i class="fas fa-book-open me-2" style="opacity:0.85;"></i>Books Library</div>
+    <div class="bk-banner-sub">{{ books.count }} book{{ books.count|pluralize }} in your catalogue &middot; Manage, edit &amp; organise</div>
+  </div>
+  <div class="bk-banner-actions">
+    <a href="{% url 'panel-book-add' %}" class="btn-add-white">
+      <span class="ba-icon"><i class="fas fa-plus"></i></span>
+      Add New Book
+    </a>
+  </div>
+</div>
+
+<!-- ── STATS ROW ── -->
+<div class="bk-stats">
+  <div class="bk-stat-card">
+    <div class="bk-stat-icon" style="background:#eef2ff;color:#6366f1;"><i class="fas fa-book-open"></i></div>
+    <div class="bk-stat-body">
+      <div class="bk-stat-num" id="statVisible">{{ books.count }}</div>
+      <div class="bk-stat-lbl">Total Books</div>
+    </div>
+  </div>
+  <div class="bk-stat-card">
+    <div class="bk-stat-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-tags"></i></div>
+    <div class="bk-stat-body">
+      <div class="bk-stat-num">Active</div>
+      <div class="bk-stat-lbl">In Catalogue</div>
+    </div>
+  </div>
+  <div class="bk-stat-card">
+    <div class="bk-stat-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-pen"></i></div>
+    <div class="bk-stat-body">
+      <div class="bk-stat-num">Edit</div>
+      <div class="bk-stat-lbl">Manage Below</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOOLBAR ── -->
+<div class="bk-toolbar">
+  <div class="bk-search-wrap">
+    <i class="fas fa-search"></i>
+    <input type="text" id="bookSearch" placeholder="Search by title, author or tag…" oninput="filterBooks(this.value)"/>
+  </div>
+  <span class="bk-badge" id="bkBadge"><i class="fas fa-filter me-1"></i><span id="bkBadgeNum">{{ books.count }}</span> books</span>
+</div>
+
+<!-- ── TABLE ── -->
+<div class="table-card">
+  <div class="table-card-header books" style="justify-content:space-between;">
+    <h2><i class="fas fa-table me-2"></i>All Books
+      <span style="opacity:0.65;font-weight:400;font-size:0.78rem;margin-left:6px;">({{ books.count }})</span>
+    </h2>
+    <a href="{% url 'panel-book-add' %}" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:7px;padding:4px 12px;font-size:0.73rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:background 0.15s;">
+      <i class="fas fa-plus" style="font-size:0.62rem;"></i> Add Book
+    </a>
+  </div>
+
+  <div class="table-responsive">
+    <table id="booksTable">
+      <thead>
+        <tr>
+          <th style="width:44px;text-align:center;">#</th>
+          <th>Book</th>
+          <th>ISBN</th>
+          <th>Language</th>
+          <th>Pages</th>
+          <th>Price</th>
+          <th>Tags</th>
+          <th style="text-align:center;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for book in books %}
+        <tr class="bk-row" data-search="{{ book.title|lower }} {{ book.author|lower }} {{ book.tags|lower|default:'' }}">
+
+          <td class="bk-num">{{ forloop.counter }}</td>
+
+          <td>
+            <div class="bk-title-cell">
+              {% if book.cover_image %}
+                <img src="{{ book.cover_image.url }}" class="bk-thumb" alt="{{ book.title }}"/>
+              {% else %}
+                <div class="bk-thumb-ph"><i class="fas fa-book"></i></div>
+              {% endif %}
+              <div>
+                <div class="bk-title-name">{{ book.title|truncatechars:34 }}</div>
+                <div class="bk-author">{{ book.author }}</div>
+              </div>
+            </div>
+          </td>
+
+          <td>
+            <span class="badge badge-purple" style="font-family:monospace;letter-spacing:0.5px;">
+              <i class="fas fa-barcode me-1"></i>{{ book.isbn }}
+            </span>
+          </td>
+
+          <td>
+            <span class="badge badge-cyan">
+              <i class="fas fa-globe me-1"></i>{{ book.language }}
+            </span>
+          </td>
+
+          <td>
+            <span style="color:#64748b;font-size:0.83rem;">
+              <i class="fas fa-file-alt me-1" style="color:#c4c9d4;"></i>{{ book.pages }}
+            </span>
+          </td>
+
+          <td><span class="bk-price">₹{{ book.amount }}</span></td>
+
+          <td>
+            {% if book.tags_list %}
+              <div style="display:flex;flex-wrap:wrap;gap:3px;max-width:170px;">
+                {% for tag in book.tags_list|slice:":3" %}
+                  <span class="bk-tag"><span class="bk-hash">#</span>{{ tag|truncatechars:12 }}</span>
+                {% endfor %}
+                {% if book.tags_list|length > 3 %}
+                  <span style="font-size:0.65rem;color:#94a3b8;padding:2px 3px;">+{{ book.tags_list|length|add:"-3" }}</span>
+                {% endif %}
+              </div>
+            {% else %}
+              <span style="color:#c4c9d4;font-size:0.8rem;">—</span>
+            {% endif %}
+          </td>
+
+          <td>
+            <div style="display:flex;gap:5px;align-items:center;justify-content:center;">
+              <a href="{% url 'panel-book-edit' book.id %}" class="btn btn-edit">
+                <i class="fas fa-pen me-1"></i>Edit
+              </a>
+              <a href="{% url 'panel-book-delete' book.id %}" class="btn btn-del">
+                <i class="fas fa-trash-alt me-1"></i>Delete
+              </a>
+            </div>
+          </td>
+
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="bk-empty-cell">
+            <div class="bk-empty-icon"><i class="fas fa-book-open"></i></div>
+            <strong style="display:block;font-size:1rem;color:#1e293b;margin-bottom:0.35rem;">No books yet</strong>
+            <span style="color:#94a3b8;font-size:0.85rem;">Start by adding your first book to the catalogue.</span>
+            <br/><br/>
+            <a href="{% url 'panel-book-add' %}" class="btn btn-add" style="margin:0 auto;">
+              <span class="btn-add-icon"><i class="fas fa-plus"></i></span> Add First Book
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- No-search-results message -->
+    <div id="noResults" style="display:none;text-align:center;padding:2.5rem 2rem;">
+      <i class="fas fa-search" style="font-size:2rem;color:#c4c9d4;display:block;margin-bottom:0.6rem;"></i>
+      <strong style="color:#475569;">No matching books</strong>
+      <p style="font-size:0.82rem;color:#94a3b8;margin-top:0.2rem;">Try a different search term.</p>
+    </div>
+  </div>
+
+  <div class="bk-table-footer">
+    <span id="bkFooter">Showing {{ books.count }} of {{ books.count }} books</span>
+    <a href="{% url 'panel-book-add' %}" style="font-size:0.78rem;font-weight:700;color:#6366f1;text-decoration:none;">
+      <i class="fas fa-plus me-1" style="font-size:0.65rem;"></i>Add new book
+    </a>
+  </div>
+</div>
+
+<script>
+  const totalBooks = {{ books.count }};
+
+  function filterBooks(q) {
+    const rows  = document.querySelectorAll('#booksTable .bk-row');
+    const term  = q.toLowerCase().trim();
+    let visible = 0;
+
+    rows.forEach(r => {
+      const match = !term || r.dataset.search.includes(term);
+      r.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+
+    document.getElementById('noResults').style.display
+      = (visible === 0 && term) ? 'block' : 'none';
+    document.getElementById('bkBadgeNum').textContent = visible;
+    document.getElementById('statVisible').textContent = visible;
+    document.getElementById('bkFooter').textContent
+      = `Showing ${visible} of ${totalBooks} books`;
+  }
+</script>
+{% endblock %}

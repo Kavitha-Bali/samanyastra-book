@@ -1,0 +1,168 @@
+{% extends 'books/user/base.html' %}
+{% block title %}Cart – Samanyastra{% endblock %}
+{% block nav_cart %}active{% endblock %}
+
+{% block content %}
+<h1 class="fw-bold mb-4" style="font-size:1.4rem;color:#1e293b;">
+  <i class="fas fa-shopping-cart me-2" style="color:#6366f1;"></i>Your Cart
+</h1>
+
+{% if cart_items %}
+<div class="row g-4 align-items-start">
+
+  <!-- Cart Items -->
+  <div class="col-12 col-lg-8">
+    {% for item in cart_items %}
+    <div class="card border-0 shadow-sm mb-3 p-3" style="border-radius:12px;">
+      <div class="d-flex gap-3 align-items-center">
+        {% if item.book.cover_image %}
+          <img src="{{ item.book.cover_image.url }}" style="width:70px;height:100px;object-fit:cover;border-radius:8px;flex-shrink:0;" alt="{{ item.book.title }}"/>
+        {% elif item.book.thumb %}
+          <img src="{{ item.book.thumb }}" style="width:70px;height:100px;object-fit:cover;border-radius:8px;flex-shrink:0;" alt="{{ item.book.title }}"/>
+        {% else %}
+          <div style="width:70px;height:100px;background:linear-gradient(160deg,#e0e7ff,#c7d2fe);display:flex;align-items:center;justify-content:center;border-radius:8px;flex-shrink:0;">
+            <i class="fas fa-book" style="font-size:1.8rem;color:#6366f1;opacity:0.6;"></i>
+          </div>
+        {% endif %}
+        <div class="flex-grow-1">
+          <div class="fw-bold" style="color:#1e293b;font-size:0.95rem;">{{ item.book.title }}</div>
+          <div class="text-muted" style="font-size:0.8rem;margin-top:2px;">{{ item.book.author }}</div>
+          <div class="fw-bold mt-2" style="color:#10b981;font-size:1.05rem;">₹{{ item.book.amount }}</div>
+        </div>
+        <a href="{% url 'remove-from-cart' item.book.id %}" class="btn btn-outline-danger btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;flex-shrink:0;" title="Remove">
+          <i class="fas fa-trash-alt"></i>
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Order Summary -->
+  <div class="col-12 col-lg-4">
+    <div class="card border-0 shadow-sm" style="border-radius:14px;overflow:hidden;">
+      <div class="card-header border-0 py-3 px-4" style="background:linear-gradient(135deg,#1e1b4b 0%,#4c1d95 100%);">
+        <h2 class="mb-0 text-white fw-bold" style="font-size:0.95rem;">
+          <i class="fas fa-receipt me-2"></i>Order Summary
+        </h2>
+      </div>
+      <div class="card-body p-4">
+        <form method="post" id="cartForm">
+          {% csrf_token %}
+
+          <!-- Promo Code -->
+          <div class="mb-3">
+            <label class="form-label fw-bold text-muted" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">
+              <i class="fas fa-tag me-1"></i>Promo Code
+            </label>
+            <div class="input-group input-group-sm">
+              <input type="text" name="promo_code" placeholder="Enter code"
+                class="form-control" style="border-color:#e2e8f0;font-size:0.85rem;"/>
+              <button type="submit" name="apply_promo" class="btn text-white fw-bold px-3"
+                style="background:#6366f1;border:none;font-size:0.8rem;">Apply</button>
+            </div>
+            {% if promo_msg %}
+              <p class="mt-1 mb-0" style="font-size:0.78rem;color:{% if discount %}#10b981{% else %}#ef4444{% endif %};">
+                {% if discount %}<i class="fas fa-check-circle me-1"></i>{% else %}<i class="fas fa-times-circle me-1"></i>{% endif %}{{ promo_msg }}
+              </p>
+            {% endif %}
+          </div>
+
+          <hr class="my-3"/>
+
+          <!-- Totals -->
+          <div class="d-flex justify-content-between align-items-center mb-2" style="font-size:0.85rem;color:#64748b;">
+            <span><i class="fas fa-box me-1"></i>Subtotal ({{ cart_items.count }} items)</span>
+            <span>₹{{ total }}</span>
+          </div>
+          {% if discount %}
+          <div class="d-flex justify-content-between align-items-center mb-2" style="font-size:0.85rem;color:#10b981;">
+            <span><i class="fas fa-percentage me-1"></i>Discount</span>
+            <span>− ₹{{ discount }}</span>
+          </div>
+          {% endif %}
+          <div class="d-flex justify-content-between align-items-center fw-bold border-top pt-2 mt-2" style="font-size:1rem;color:#1e293b;">
+            <span>Total</span>
+            <span style="color:#10b981;">₹{{ final }}</span>
+          </div>
+
+          <button type="button" id="razorpayCartBtn" onclick="openCartRazorpay()"
+            class="btn text-white fw-bold w-100 mt-3 py-2"
+            style="background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:8px;font-size:0.95rem;box-shadow:0 4px 14px rgba(79,70,229,0.4);">
+            <i class="fas fa-bolt me-2"></i>Pay with Razorpay &nbsp;₹{{ final }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% else %}
+  <div class="text-center py-5" style="color:#94a3b8;">
+    <i class="fas fa-shopping-cart mb-3" style="font-size:4rem;display:block;opacity:0.4;"></i>
+    <p class="mb-3" style="font-size:1rem;">Your cart is empty.</p>
+    <a href="{% url 'user-home' %}" class="btn text-white fw-bold px-4" style="background:#6366f1;border:none;">
+      <i class="fas fa-store me-2"></i>Browse Books
+    </a>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+const CSRF            = '{{ csrf_token }}';
+const CART_ORDER_URL  = '{% url "razorpay-create-cart-order" %}';
+const CART_VERIFY_URL = '{% url "razorpay-verify-cart-payment" %}';
+
+async function openCartRazorpay() {
+  const btn = document.getElementById('razorpayCartBtn');
+  const promoInput = document.querySelector('input[name="promo_code"]');
+  const promoCode  = promoInput ? promoInput.value.trim() : '';
+  btn.disabled = true;
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Please wait...';
+
+  try {
+    const res   = await fetch(CART_ORDER_URL, {
+      method: 'POST',
+      headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/json'},
+      body: JSON.stringify({promo_code: promoCode}),
+    });
+    const order = await res.json();
+    if (order.error) { alert(order.error); btn.disabled=false; btn.innerHTML=origText; return; }
+
+    const options = {
+      key:         order.key,
+      amount:      order.amount,
+      currency:    order.currency,
+      name:        'Samanyastra',
+      description: 'Cart Checkout',
+      order_id:    order.order_id,
+      handler: async function(response) {
+        const vRes   = await fetch(CART_VERIFY_URL, {
+          method: 'POST',
+          headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            razorpay_order_id:   response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature:  response.razorpay_signature,
+            promo_code:          order.promo_code,
+          }),
+        });
+        const result = await vRes.json();
+        if (result.success) { window.location.href = result.redirect; }
+        else { alert('Payment verification failed. Please contact support.'); }
+      },
+      prefill: { name: order.user_name, email: order.user_email },
+      theme:   { color: '#6366f1' },
+      modal:   { ondismiss: function() { btn.disabled=false; btn.innerHTML=origText; } },
+    };
+    new Razorpay(options).open();
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = origText;
+    alert('Something went wrong. Please try again.');
+  }
+}
+</script>
+{% endblock %}

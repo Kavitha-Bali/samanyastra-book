@@ -1,0 +1,29 @@
+{% extends 'books/panel/base.html' %}
+{% block title %}Delete Transaction – Panel{% endblock %}
+{% block topbar_title %}Delete Transaction{% endblock %}
+{% block nav_txns %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>🗑️ Delete <span>Transaction</span></h1>
+</div>
+
+<div class="confirm-card">
+  <div class="confirm-card-header">
+    <h2>⚠️ Confirm Deletion</h2>
+  </div>
+  <div class="confirm-body">
+    <p>Delete this transaction?</p><br/>
+    <p><strong>User:</strong> {{ txn.user.user.username }}</p>
+    <p><strong>Book:</strong> {{ txn.book.title }}</p>
+    <p><strong>Date:</strong> {{ txn.transaction_date }}</p>
+  </div>
+  <div class="confirm-actions">
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">🗑️ Yes, Delete</button>
+    </form>
+    <a href="{% url 'panel-transactions' %}" class="btn btn-primary">Cancel</a>
+  </div>
+</div>
+{% endblock %}

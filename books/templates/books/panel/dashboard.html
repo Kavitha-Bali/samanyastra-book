@@ -1,0 +1,169 @@
+{% extends 'books/panel/base.html' %}
+{% block title %}Dashboard – Samanyastra Panel{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+{% block nav_dash %}active{% endblock %}
+
+{% block content %}
+
+<!-- Welcome Banner -->
+<div class="dash-welcome">
+  <div>
+    <div class="dash-welcome-sub">Admin Panel</div>
+    <h1 class="dash-welcome-title">Welcome back, <span>{{ request.user.username }}</span></h1>
+    <p class="dash-welcome-text">Here's a summary of your store activity.</p>
+  </div>
+  <div class="dash-date-badge">
+    <i class="fas fa-calendar-alt"></i>
+    <span id="dashDate">—</span>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+  <a href="{% url 'panel-book-add' %}" class="qab qab-primary">
+    <i class="fas fa-plus-circle"></i> Add Book
+  </a>
+  <a href="{% url 'panel-books' %}" class="qab">
+    <i class="fas fa-book" style="color:#6366f1;"></i> All Books
+  </a>
+  <a href="{% url 'panel-users' %}" class="qab">
+    <i class="fas fa-users" style="color:#0ea5e9;"></i> Users
+  </a>
+  <a href="{% url 'panel-transactions' %}" class="qab">
+    <i class="fas fa-receipt" style="color:#10b981;"></i> Transactions
+  </a>
+  <a href="{% url 'panel-promos' %}" class="qab">
+    <i class="fas fa-tag" style="color:#f59e0b;"></i> Promos
+  </a>
+</div>
+
+<!-- Stat Cards -->
+<div class="stats-grid">
+  <div class="stat-card books">
+    <span class="stat-icon"><i class="fas fa-book-open"></i></span>
+    <div class="stat-info">
+      <div class="stat-num">{{ book_count }}</div>
+      <div class="stat-label">Total Books</div>
+    </div>
+  </div>
+  <div class="stat-card users">
+    <span class="stat-icon"><i class="fas fa-users"></i></span>
+    <div class="stat-info">
+      <div class="stat-num">{{ user_count }}</div>
+      <div class="stat-label">Registered Users</div>
+    </div>
+  </div>
+  <div class="stat-card txns">
+    <span class="stat-icon"><i class="fas fa-credit-card"></i></span>
+    <div class="stat-info">
+      <div class="stat-num">{{ txn_count }}</div>
+      <div class="stat-label">Total Transactions</div>
+    </div>
+  </div>
+  <div class="stat-card promos">
+    <span class="stat-icon"><i class="fas fa-tag"></i></span>
+    <div class="stat-info">
+      <div class="stat-num">{{ promo_count }}</div>
+      <div class="stat-label">Promo Codes</div>
+    </div>
+  </div>
+</div>
+
+<!-- Two-column layout -->
+<div class="dash-grid">
+
+  <!-- Recent Books -->
+  <div class="table-card">
+    <div class="table-card-header books">
+      <h2><i class="fas fa-book me-2"></i>Recent Books</h2>
+      <a href="{% url 'panel-book-add' %}" class="btn btn-success btn-sm">
+        <i class="fas fa-plus me-1"></i>Add
+      </a>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th><th>Author</th><th>Language</th><th>Price</th><th>Tags</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for book in recent_books %}
+        <tr>
+          <td><strong>{{ book.title }}</strong></td>
+          <td>{{ book.author }}</td>
+          <td><span class="badge badge-blue">{{ book.language }}</span></td>
+          <td><strong style="color:#10b981;">₹{{ book.amount }}</strong></td>
+          <td>
+            {% if book.tags_list %}
+              <div style="display:flex;flex-wrap:wrap;gap:3px;">
+                {% for tag in book.tags_list|slice:":3" %}
+                  <span style="background:#eef2ff;color:#6366f1;border:1px solid #e0e7ff;border-radius:20px;padding:2px 8px;font-size:0.67rem;font-weight:700;white-space:nowrap;">
+                    #{{ tag }}
+                  </span>
+                {% endfor %}
+                {% if book.tags_list|length > 3 %}
+                  <span style="color:#94a3b8;font-size:0.67rem;padding:2px 4px;">+{{ book.tags_list|length|add:"-3" }}</span>
+                {% endif %}
+              </div>
+            {% else %}
+              <span style="color:#94a3b8;">—</span>
+            {% endif %}
+          </td>
+          <td style="display:flex;gap:5px;align-items:center;">
+            <a href="{% url 'panel-book-edit' book.id %}" class="btn btn-edit"><i class="fas fa-pen me-1"></i>Edit</a>
+            <a href="{% url 'panel-book-delete' book.id %}" class="btn btn-del"><i class="fas fa-trash-alt me-1"></i>Del</a>
+          </td>
+        </tr>
+        {% empty %}
+          <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;">
+            <i class="fas fa-inbox me-2"></i>No books yet.
+          </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="padding:0.75rem 1.2rem;border-top:1px solid var(--border-light);">
+      <a href="{% url 'panel-books' %}" style="font-size:0.78rem;font-weight:600;color:var(--accent);text-decoration:none;">
+        View all books <i class="fas fa-arrow-right ms-1"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="table-card">
+    <div class="table-card-header txns">
+      <h2><i class="fas fa-receipt me-2"></i>Recent Transactions</h2>
+      <a href="{% url 'panel-transactions' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);font-size:0.73rem;">
+        View All
+      </a>
+    </div>
+    <div class="txn-list">
+      {% for txn in recent_txns %}
+      <div class="txn-row">
+        <div class="txn-avatar">{{ txn.user.username|first|upper }}</div>
+        <div class="txn-info">
+          <div class="txn-book">{{ txn.book.title|truncatechars:28 }}</div>
+          <div class="txn-user"><i class="fas fa-user me-1" style="opacity:0.45;"></i>{{ txn.user.username }}</div>
+        </div>
+        <div class="txn-amount">₹{{ txn.amount_paid }}</div>
+      </div>
+      {% empty %}
+      <div style="padding:2rem;text-align:center;color:#94a3b8;">
+        <i class="fas fa-receipt mb-2" style="font-size:2rem;display:block;opacity:0.3;"></i>
+        No transactions yet.
+      </div>
+      {% endfor %}
+    </div>
+    <div style="padding:0.75rem 1.2rem;border-top:1px solid var(--border-light);">
+      <a href="{% url 'panel-transactions' %}" style="font-size:0.78rem;font-weight:600;color:var(--accent);text-decoration:none;">
+        View all transactions <i class="fas fa-arrow-right ms-1"></i>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.getElementById('dashDate').textContent =
+    new Date().toLocaleDateString('en-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+</script>
+{% endblock %}

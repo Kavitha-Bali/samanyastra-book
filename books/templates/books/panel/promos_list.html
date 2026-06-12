@@ -1,0 +1,47 @@
+{% extends 'books/panel/base.html' %}
+{% block title %}Promo Codes – Samanyastra Panel{% endblock %}
+{% block topbar_title %}Promo Codes{% endblock %}
+{% block nav_promos %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="fas fa-tag me-2" style="color:#f59e0b;"></i><span>Promo Codes</span></h1>
+  <a href="{% url 'panel-promo-add' %}" class="btn btn-add">
+    <span class="btn-add-icon"><i class="fas fa-plus"></i></span>
+    Add Promo
+  </a>
+</div>
+
+<div class="table-card">
+  <div class="table-card-header promos">
+    <h2><i class="fas fa-list me-2"></i>All Promo Codes ({{ promos.count }})</h2>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Code</th><th>Discount</th><th>Expires</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for p in promos %}
+        <tr>
+          <td style="color:#94a3b8;">{{ forloop.counter }}</td>
+          <td>
+            <span style="background:#1e1b4b;color:#fbbf24;padding:4px 12px;border-radius:6px;font-family:monospace;font-weight:800;letter-spacing:1px;">
+              <i class="fas fa-ticket-alt me-1"></i>{{ p.code }}
+            </span>
+          </td>
+          <td><span class="badge badge-orange"><i class="fas fa-percentage me-1"></i>{{ p.discount_percentage }}% OFF</span></td>
+          <td><i class="fas fa-calendar-alt me-1 text-muted"></i>{{ p.expiration_date }}</td>
+          <td style="display:flex;gap:6px;align-items:center;">
+            <a href="{% url 'panel-promo-edit' p.id %}" class="btn btn-edit"><i class="fas fa-pen me-1"></i>Edit</a>
+            <a href="{% url 'panel-promo-delete' p.id %}" class="btn btn-del"><i class="fas fa-trash-alt me-1"></i>Delete</a>
+          </td>
+        </tr>
+        {% empty %}
+          <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem;"><i class="fas fa-inbox me-2"></i>No promo codes found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

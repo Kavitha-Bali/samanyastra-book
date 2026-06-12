@@ -1,0 +1,94 @@
+{% extends 'books/user/base.html' %}
+{% block title %}Rate {{ book.title }} – Samanyastra{% endblock %}
+
+{% block content %}
+<a href="{% url 'user-book-detail' book.id %}" class="d-inline-flex align-items-center gap-1 mb-3 text-decoration-none fw-semibold" style="color:#6366f1;font-size:0.85rem;">
+  <i class="fas fa-arrow-left"></i> Back to Book
+</a>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-sm-10 col-md-7 col-lg-5">
+    <div class="card border-0 shadow-sm" style="border-radius:14px;overflow:hidden;">
+      <div class="card-header border-0 py-3 px-4" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+        <h2 class="mb-0 text-white fw-bold" style="font-size:1rem;">
+          <i class="fas fa-star me-2"></i>Rate this Book
+        </h2>
+      </div>
+      <div class="card-body p-4">
+        <!-- Book Info -->
+        <div class="d-flex gap-3 align-items-center p-3 rounded-3 mb-4" style="background:#fef9f0;">
+          {% if book.cover_image %}
+            <img src="{{ book.cover_image.url }}" style="width:50px;height:70px;object-fit:cover;border-radius:6px;flex-shrink:0;"/>
+          {% else %}
+            <div style="width:50px;height:70px;background:#e0e7ff;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-book text-primary opacity-50" style="font-size:1.5rem;"></i>
+            </div>
+          {% endif %}
+          <div>
+            <div class="fw-bold" style="color:#1e293b;">{{ book.title }}</div>
+            <div class="text-muted" style="font-size:0.8rem;">{{ book.author }}</div>
+          </div>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+
+          <!-- Star Rating -->
+          <div class="mb-4">
+            <label class="form-label fw-bold text-muted" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;">
+              <i class="fas fa-star me-1" style="color:#f59e0b;"></i>Your Rating
+            </label>
+            <div class="d-flex gap-2" id="starRow">
+              {% for star in "12345" %}
+              <label class="star-label" style="cursor:pointer;font-size:2rem;color:#d1d5db;transition:color 0.15s;"
+                onmouseover="highlightStars({{ forloop.counter }})" onmouseout="resetStars()">
+                <input type="radio" name="stars" value="{{ forloop.counter }}"
+                  {% if existing.stars == forloop.counter %}checked{% endif %}
+                  style="display:none;" onchange="setRating({{ forloop.counter }})"/>
+                <span class="star" data-val="{{ forloop.counter }}"><i class="fas fa-star"></i></span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Review -->
+          <div class="mb-4">
+            <label class="form-label fw-bold text-muted" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;">
+              <i class="fas fa-comment me-1"></i>Review <span class="fw-normal">(optional)</span>
+            </label>
+            <textarea name="review" rows="4" class="form-control"
+              placeholder="Share your thoughts about this book…"
+              style="border:2px solid #e2e8f0;border-radius:8px;font-size:0.88rem;resize:vertical;">{{ existing.review|default:'' }}</textarea>
+          </div>
+
+          <button type="submit" class="btn text-white fw-bold w-100 py-2"
+            style="background:linear-gradient(135deg,#f59e0b,#d97706);border:none;border-radius:8px;font-size:0.95rem;box-shadow:0 4px 12px rgba(245,158,11,0.35);">
+            <i class="fas fa-paper-plane me-2"></i>Submit Rating
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .star-label { color: #d1d5db; }
+  .star-label.active { color: #f59e0b; }
+  textarea.form-control:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
+</style>
+
+<script>
+  const starLabels = document.querySelectorAll('.star-label');
+  let currentRating = {{ existing.stars|default:0 }};
+
+  function highlightStars(val) {
+    starLabels.forEach((s, i) => {
+      s.style.color = i < val ? '#f59e0b' : '#d1d5db';
+    });
+  }
+  function resetStars() { highlightStars(currentRating); }
+  function setRating(val) { currentRating = val; highlightStars(val); }
+
+  resetStars();
+</script>
+{% endblock %}
