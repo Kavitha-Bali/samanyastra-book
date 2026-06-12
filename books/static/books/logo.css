@@ -1,0 +1,129 @@
+/* Samanyastra brand logo styles */
+
+/* ── Shared icon box ── */
+
+/* home nav  — sits inside a 64px bar */
+.logo-img {
+  height: 40px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* user nav — sits inside a 60px bar */
+.user-nav .logo .logo-img {
+  height: 36px;
+  max-width: 140px;
+}
+
+
+.logo-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.45);
+}
+
+/* ── Home page nav logo ── */
+nav .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: opacity 0.18s;
+}
+nav .logo:hover { opacity: 0.85; }
+nav .logo .logo-text { color: #ffffff; }
+nav .logo .logo-text span { color: #818cf8; }
+
+/* ── User nav logo (inner pages) ── */
+.user-nav .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Playfair Display', 'Georgia', serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: none;
+  letter-spacing: 0.4px;
+  transition: opacity 0.18s;
+}
+.user-nav .logo:hover { opacity: 0.85; }
+.user-nav .logo .logo-icon { width: 32px; height: 32px; font-size: 0.95rem; }
+.user-nav .logo .logo-text { color: #ffffff; }
+.user-nav .logo .logo-text span { color: #818cf8; }
+
+/* ── Admin sidebar brand ── */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1.2rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 0.5rem;
+}
+
+/* admin sidebar — fixed-width drawer */
+.sidebar-logo-img {
+  height: 38px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 6px;
+}
+
+.sidebar-brand .name {
+  font-family: 'Playfair Display', 'Georgia', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.2;
+  letter-spacing: 0.3px;
+}
+.sidebar-brand .name span { color: #fbbf24; }
+
+.sidebar-brand .tag {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: #64748b;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+/* ── Footer logo ── */
+.footer-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.footer-logo .logo-icon {
+  width: 30px;
+  height: 30px;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+}
+
+.footer-logo .logo-text { color: #ffffff; }
+.footer-logo .logo-text span { color: #818cf8; }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .logo-img { height: 28px; max-width: 110px; }
+  .user-nav .logo .logo-img { height: 26px; max-width: 100px; }
+  .sidebar-logo-img { height: 30px; }
+  nav .logo { font-size: 1.1rem; }
+}
