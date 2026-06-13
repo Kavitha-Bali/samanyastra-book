@@ -13,7 +13,7 @@ if _env_file.exists():
 
 # ── Secrets ──────────────────────────────────────────────────
 SECRET_KEY = env("SECRET_KEY", default="insecure-build-placeholder")
-DEBUG = True
+DEBUG = False
 ALLOWED_HOSTS      = env.list("ALLOWED_HOSTS", default=[]) + [".samanyastra.com"]
 CSRF_TRUSTED_ORIGINS = ["https://*.samanyastra.com"]
 
@@ -66,7 +66,7 @@ WSGI_APPLICATION = "samanyastra_book.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME":     env("DB_NAME",     default=""),
+        "NAME":     env("BOOKS_DB_NAME",     default=""),
         "USER":     env("DB_USER",     default=""),
         "PASSWORD": env("DB_PASSWORD", default=""),
         "HOST":     env("DB_HOST",     default=""),
