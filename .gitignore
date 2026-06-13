@@ -28,7 +28,6 @@ dist/
 build/
 *.egg-info/
 *.egg
-*.whl
 *.dist-info/
 
 # ── Testing / coverage ───────────────────────────────────────
