@@ -15,7 +15,9 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import Books, UserProfile, Cart, Transaction, Rating, Promocode
+import secrets
+from .models import Books, UserProfile, Cart, Transaction, Rating, Promocode, PasswordResetToken
+from .tasks import send_email
 
 BOOK_GENRES = [
     'Fiction', 'Non-Fiction', 'Science', 'History', 'Technology',
@@ -287,6 +289,62 @@ def user_login(request):
 def user_logout(request):
     logout(request)
     return redirect('user-login')
+
+
+def reset_password(request, token):
+    token_obj = PasswordResetToken.objects.filter(token=token, is_expired=False).select_related('user').first()
+
+    if token_obj is None:
+        return render(request, 'books/user/token_invalid.html')
+
+    error = None
+    if request.method == 'POST':
+        # Re-validate token on submit to prevent replay after expiry
+        token_obj = PasswordResetToken.objects.filter(token=token, is_expired=False).select_related('user').first()
+        if token_obj is None:
+            return render(request, 'books/user/token_invalid.html')
+
+        password  = request.POST.get('password', '')
+        password2 = request.POST.get('password2', '')
+        user      = token_obj.user
+
+        if not password:
+            error = 'Password cannot be empty.'
+        elif len(password) < 8:
+            error = 'Password must be at least 8 characters.'
+        elif password != password2:
+            error = 'Passwords do not match.'
+        elif user.check_password(password):
+            error = 'New password must be different from your current password.'
+        else:
+            user.set_password(password)
+            user.save()
+            token_obj.is_expired = True
+            token_obj.save()
+            messages.success(request, 'Password reset successful. Please log in.')
+            return redirect('user-login')
+
+    return render(request, 'books/user/reset_password.html', {'token': token, 'error': error})
+
+
+def forgot_password(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        user  = User.objects.filter(email=email).first()
+        if user:
+            # Expire any existing tokens for this user
+            PasswordResetToken.objects.filter(user=user, is_expired=False).update(is_expired=True)
+
+            token = secrets.token_hex(16)  # 32-char hex string
+            PasswordResetToken.objects.create(user=user, token=token)
+
+            reset_link = request.build_absolute_uri(f'/reset-password/{token}/')
+            send_email.delay('forgot_password', user.email, user_name=user.get_full_name() or user.username, reset_link=reset_link)
+
+        # Always show success to avoid email enumeration
+        messages.success(request, 'If that email exists, a reset link has been sent.')
+        return redirect('forgot-password')
+    return render(request, 'books/user/forgot_password.html')
 
 
 # ════════════════════════════════════

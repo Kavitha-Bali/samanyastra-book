@@ -25,9 +25,11 @@ urlpatterns = [
     path('panel/promos/<int:promo_id>/delete/', views.panel_promo_delete, name='panel-promo-delete'),
 
     # ── User Auth ──
-    path('register/',   views.user_register, name='user-register'),
-    path('login/',      views.user_login,    name='user-login'),
-    path('logout/',     views.user_logout,   name='user-logout'),
+    path('register/',         views.user_register,   name='user-register'),
+    path('login/',             views.user_login,      name='user-login'),
+    path('logout/',            views.user_logout,     name='user-logout'),
+    path('forgot-password/',          views.forgot_password, name='forgot-password'),
+    path('reset-password/<str:token>/', views.reset_password,  name='reset-password'),
 
     # ── User Panel ──
     path('shop/',                            views.user_home,         name='user-home'),
