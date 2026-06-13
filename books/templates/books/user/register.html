@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
   <style>
     body { background: linear-gradient(135deg, #1a1f3c 0%, #312e81 50%, #4f46e5 100%); min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
-    .auth-card { background: #fff; border-radius: 18px; padding: 2.5rem 2rem; width: 100%; max-width: 420px; box-shadow: 0 24px 64px rgba(0,0,0,0.4); }
+    .auth-card { background: #fff; border-radius: 18px; padding: 2.5rem 2rem; width: 100%; max-width: 440px; box-shadow: 0 24px 64px rgba(0,0,0,0.4); }
     .auth-logo { font-size: 2.2rem; color: #4f46e5; }
     .brand-name { font-size: 1.5rem; font-weight: 800; color: #1e293b; }
     .brand-name span { color: #6366f1; }
@@ -21,6 +21,11 @@
     .input-group:focus-within .input-group-text { border-color: #6366f1; color: #6366f1; }
     .btn-auth { background: linear-gradient(135deg, #6366f1, #4f46e5); border: none; font-weight: 700; padding: 0.7rem; font-size: 1rem; }
     .btn-auth:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
+    .hint-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.55rem 0.8rem; margin-top: 0.4rem; }
+    .hint-box li { font-size: 0.75rem; color: #64748b; margin-bottom: 1px; }
+    .strength-bar { height: 4px; border-radius: 2px; background: #e2e8f0; margin-top: 6px; overflow: hidden; }
+    .strength-fill { height: 100%; border-radius: 2px; width: 0; transition: width 0.3s, background 0.3s; }
+    .strength-label { font-size: 0.68rem; font-weight: 700; margin-top: 3px; }
   </style>
 </head>
 <body class="d-flex align-items-center justify-content-center p-3">
@@ -31,42 +36,88 @@
     <p class="text-muted mt-1" style="font-size:0.85rem;">Create your free account</p>
   </div>
 
-  {% if error %}
-    <div class="alert alert-danger d-flex align-items-center gap-2 py-2" role="alert">
-      <i class="fas fa-exclamation-circle"></i> {{ error }}
+  {% if errors %}
+    <div class="alert alert-danger py-2" role="alert">
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <i class="fas fa-exclamation-circle"></i>
+        <strong style="font-size:0.85rem;">Please fix the following:</strong>
+      </div>
+      <ul class="mb-0 ps-3" style="font-size:0.82rem;">
+        {% for err in errors %}<li>{{ err }}</li>{% endfor %}
+      </ul>
     </div>
   {% endif %}
 
-  <form method="post">
+  <form method="post" id="registerForm">
     {% csrf_token %}
+
+    <!-- Username -->
     <div class="mb-3">
       <label class="form-label fw-semibold text-muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;">Username</label>
       <div class="input-group">
         <span class="input-group-text"><i class="fas fa-user"></i></span>
-        <input type="text" name="username" class="form-control" placeholder="Choose a username" required autofocus/>
+        <input type="text" name="username" id="usernameInput"
+               class="form-control" placeholder="Choose a username"
+               value="{{ form_data.username|default:'' }}"
+               minlength="3" maxlength="150" required autofocus/>
+      </div>
+      <div class="hint-box mt-1">
+        <ul class="mb-0 ps-3">
+          <li>3–150 characters</li>
+          <li>Letters, digits, and <code>@ . + - _</code> only</li>
+          <li>No spaces allowed</li>
+        </ul>
       </div>
     </div>
+
+    <!-- Email -->
     <div class="mb-3">
-      <label class="form-label fw-semibold text-muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;">Email <span class="text-muted fw-normal">(optional)</span></label>
+      <label class="form-label fw-semibold text-muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;">Email <span class="fw-normal">(optional)</span></label>
       <div class="input-group">
         <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-        <input type="email" name="email" class="form-control" placeholder="you@example.com"/>
+        <input type="email" name="email" class="form-control" placeholder="you@example.com"
+               value="{{ form_data.email|default:'' }}"/>
       </div>
     </div>
+
+    <!-- Password -->
     <div class="mb-3">
       <label class="form-label fw-semibold text-muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;">Password</label>
       <div class="input-group">
         <span class="input-group-text"><i class="fas fa-lock"></i></span>
-        <input type="password" name="password" class="form-control" placeholder="Create a password" required/>
+        <input type="password" name="password" id="passwordInput"
+               class="form-control" placeholder="Create a password"
+               minlength="8" required/>
+        <button type="button" class="input-group-text" id="togglePwd" style="cursor:pointer;border-left:none;background:#f8fafc;">
+          <i class="fas fa-eye" id="togglePwdIcon" style="color:#94a3b8;"></i>
+        </button>
+      </div>
+      <!-- Strength bar -->
+      <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+      <div class="strength-label" id="strengthLabel" style="color:#94a3b8;">Enter a password</div>
+      <!-- Requirements -->
+      <div class="hint-box">
+        <ul class="mb-0 ps-3">
+          <li>At least <strong>8 characters</strong></li>
+          <li>Cannot be entirely numeric</li>
+          <li>Cannot be a commonly used password</li>
+          <li>Cannot be too similar to your username</li>
+        </ul>
       </div>
     </div>
+
+    <!-- Confirm Password -->
     <div class="mb-4">
       <label class="form-label fw-semibold text-muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;">Confirm Password</label>
       <div class="input-group">
         <span class="input-group-text"><i class="fas fa-lock"></i></span>
-        <input type="password" name="password2" class="form-control" placeholder="Repeat your password" required/>
+        <input type="password" name="password2" id="password2Input"
+               class="form-control" placeholder="Repeat your password"
+               minlength="8" required/>
       </div>
+      <div id="matchMsg" style="font-size:0.72rem;margin-top:4px;display:none;"></div>
     </div>
+
     <button type="submit" class="btn btn-auth btn-primary w-100 text-white">
       <i class="fas fa-user-plus me-2"></i>Create Account
     </button>
@@ -76,6 +127,60 @@
     Already have an account? <a href="{% url 'user-login' %}" style="color:#6366f1;font-weight:600;">Login</a>
   </p>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ── Show/hide password ── */
+document.getElementById('togglePwd').addEventListener('click', function () {
+  var inp  = document.getElementById('passwordInput');
+  var icon = document.getElementById('togglePwdIcon');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    icon.className = 'fas fa-eye-slash';
+  } else {
+    inp.type = 'password';
+    icon.className = 'fas fa-eye';
+  }
+});
+
+/* ── Password strength indicator ── */
+document.getElementById('passwordInput').addEventListener('input', function () {
+  var val   = this.value;
+  var fill  = document.getElementById('strengthFill');
+  var label = document.getElementById('strengthLabel');
+  var score = 0;
+  if (val.length >= 8)  score++;
+  if (val.length >= 12) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  var levels = [
+    { w: '0%',   c: '#e2e8f0', t: 'Enter a password' },
+    { w: '25%',  c: '#ef4444', t: 'Too weak' },
+    { w: '50%',  c: '#f59e0b', t: 'Weak' },
+    { w: '65%',  c: '#f59e0b', t: 'Fair' },
+    { w: '85%',  c: '#10b981', t: 'Strong' },
+    { w: '100%', c: '#059669', t: 'Very strong' },
+  ];
+  var lvl = val.length === 0 ? levels[0] : levels[Math.min(score, 5)];
+  fill.style.width      = lvl.w;
+  fill.style.background = lvl.c;
+  label.textContent     = lvl.t;
+  label.style.color     = lvl.c;
+});
+
+/* ── Confirm password match indicator ── */
+document.getElementById('password2Input').addEventListener('input', function () {
+  var msg = document.getElementById('matchMsg');
+  var p1  = document.getElementById('passwordInput').value;
+  if (this.value.length === 0) { msg.style.display = 'none'; return; }
+  msg.style.display = 'block';
+  if (this.value === p1) {
+    msg.innerHTML = '<i class="fas fa-check-circle" style="color:#10b981;"></i> <span style="color:#10b981;font-weight:600;">Passwords match</span>';
+  } else {
+    msg.innerHTML = '<i class="fas fa-times-circle" style="color:#ef4444;"></i> <span style="color:#ef4444;font-weight:600;">Passwords do not match</span>';
+  }
+});
+</script>
 </body>
 </html>

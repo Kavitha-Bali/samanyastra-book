@@ -3,6 +3,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse, FileResponse
@@ -74,8 +77,11 @@ def home_buy_now(request, book_id):
 # ════════════════════════════════════
 
 def panel_login(request):
-    if request.user.is_authenticated and request.user.is_staff:
-        return redirect('panel-dashboard')
+    if request.user.is_authenticated:
+        if request.user.is_staff:
+            return redirect('panel-dashboard')
+        messages.error(request, 'You do not have permission to access the admin panel.')
+        return redirect('user-home')
     error = None
     if request.method == 'POST':
         u = authenticate(request, username=request.POST['username'], password=request.POST['password'])
@@ -315,19 +321,51 @@ def panel_promo_delete(request, promo_id):
 def user_register(request):
     if request.user.is_authenticated:
         return redirect('user-home')
-    error = None
+    errors = []
+    form_data = {}
     if request.method == 'POST':
         d = request.POST
-        if d['password'] != d['password2']:
-            error = 'Passwords do not match.'
-        elif User.objects.filter(username=d['username']).exists():
-            error = 'Username already taken.'
-        else:
-            u = User.objects.create_user(username=d['username'], email=d.get('email', ''), password=d['password'])
+        username  = d.get('username', '').strip()
+        email     = d.get('email', '').strip()
+        password  = d.get('password', '')
+        password2 = d.get('password2', '')
+        form_data = {'username': username, 'email': email}
+
+        # 1. Username format — letters, digits, @/./+/-/_ only
+        try:
+            UnicodeUsernameValidator()(username)
+        except ValidationError as e:
+            errors.extend(e.messages)
+
+        # 2. Username length
+        if len(username) < 3:
+            errors.append('Username must be at least 3 characters.')
+        elif len(username) > 150:
+            errors.append('Username must be 150 characters or fewer.')
+
+        # 3. Username already taken (case-insensitive)
+        if not errors:
+            if User.objects.filter(username__iexact=username).exists():
+                errors.append('That username is already taken.')
+
+        # 4. Passwords match
+        if password != password2:
+            errors.append('Passwords do not match.')
+
+        # 5. Django password validators (length, similarity, common, numeric)
+        if not errors:
+            try:
+                validate_password(password, user=User(username=username, email=email))
+            except ValidationError as e:
+                errors.extend(e.messages)
+
+        if not errors:
+            u = User.objects.create_user(username=username, email=email, password=password)
             UserProfile.objects.create(user=u)
             login(request, u)
             return redirect('user-home')
-    return render(request, 'books/user/register.html', {'error': error})
+
+    return render(request, 'books/user/register.html', {'errors': errors, 'form_data': form_data})
 
 
 def user_login(request):
