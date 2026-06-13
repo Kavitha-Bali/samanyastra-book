@@ -93,8 +93,6 @@ USE_TZ = True
 # ── Static / Media ────────────────────────────────────────────
 STATIC_URL  = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-MEDIA_URL   = "/media/"
 MEDIA_ROOT  = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -131,21 +129,17 @@ CELERY_TIMEZONE   = TIME_ZONE
 
 
 
-# AZURE CONFIGURATION FOR STORAGE
-AZURE_ACCOUNT_NAME =  env("AZURE_ACCOUNT_NAME", default="")
-AZURE_ACCOUNT_KEY = env("AZURE_ACCOUNT_KEY", default="")
+# ── Azure Storage (media only) ────────────────────────────────
+AZURE_ACCOUNT_NAME      = env("AZURE_ACCOUNT_NAME",      default="")
+AZURE_ACCOUNT_KEY       = env("AZURE_ACCOUNT_KEY",       default="")
 AZURE_CONNECTION_STRING = env("AZURE_CONNECTION_STRING", default="")
+AZURE_CONTAINER_MEDIA   = "media"
 
-
-AZURE_CONTAINER_STATIC = "static"
-AZURE_CONTAINER_MEDIA = "media"
-
-STATIC_ROOT = f"https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{AZURE_CONTAINER_STATIC}/"
-MEDIA_URL = f"https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{AZURE_CONTAINER_MEDIA}/"
+MEDIA_URL = "/media/"
 
 STORAGES = {
     "default": {
-        "BACKEND": "storages.backends.azure_storage.AzureStorage",
+        "BACKEND": "books.storage.ProxiedAzureStorage",
         "OPTIONS": {
             "azure_container": AZURE_CONTAINER_MEDIA,
             "account_name": AZURE_ACCOUNT_NAME,
@@ -154,12 +148,6 @@ STORAGES = {
         },
     },
     "staticfiles": {
-        "BACKEND": "storages.backends.azure_storage.AzureStorage",
-        "OPTIONS": {
-            "azure_container": AZURE_CONTAINER_STATIC,
-            "account_name": AZURE_ACCOUNT_NAME,
-            "account_key": AZURE_ACCOUNT_KEY,
-            "connection_string": AZURE_CONNECTION_STRING,
-        }
-    }
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
 }
