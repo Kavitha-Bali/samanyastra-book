@@ -1,7 +1,52 @@
-__pycache__//
+# ── Python ────────────────────────────────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+*.so
 
+# ── Virtual environments ──────────────────────────────────────
 env/
+venv/
+.venv/
+ENV/
+
+# ── Django ────────────────────────────────────────────────────
+*.log
+db.sqlite3
+/media/
+staticfiles/
+static_root/
+
+# ── Environment / secrets ─────────────────────────────────────
 .env
-/db.sqlite3
+.env.*
+!.env.example
+
+# ── Distribution / packaging ─────────────────────────────────
+dist/
+build/
+*.egg-info/
+*.egg
+*.whl
+*.dist-info/
+
+# ── Testing / coverage ───────────────────────────────────────
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.tox/
+
+# ── IDEs & editors ────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Celery ────────────────────────────────────────────────────
+celerybeat-schedule
+celerybeat.pid
