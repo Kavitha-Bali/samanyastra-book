@@ -290,6 +290,12 @@
     <div class="form-section">
       <div class="form-section-header"><h3><i class="fas fa-image me-2"></i>Cover Image</h3></div>
       <div class="form-section-body">
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:0.6rem 0.85rem;margin-bottom:1rem;display:flex;align-items:flex-start;gap:0.5rem;">
+          <i class="fas fa-lightbulb" style="color:#f59e0b;margin-top:2px;flex-shrink:0;"></i>
+          <span style="font-size:0.78rem;color:#92400e;line-height:1.5;">
+            <strong>Tip:</strong> The cover image is the first thing users see when browsing books on the shop. Upload a clear, high-quality cover to boost visibility and purchases.
+          </span>
+        </div>
         <div class="row2">
           <div class="fg">
             <label>Upload Cover Image</label>
@@ -322,6 +328,74 @@
             {% endif %}
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Preview Images -->
+    <div class="form-section" style="border:1.5px solid #c7d2fe;">
+      <div class="form-section-header" style="background:linear-gradient(90deg,#6366f1,#8b5cf6);">
+        <h3>
+          <i class="fas fa-images me-2"></i>
+          Preview Images
+          <span style="font-weight:400;font-size:0.75rem;opacity:0.8;margin-left:6px;">— shown in the gallery on the book detail page</span>
+        </h3>
+      </div>
+      <div class="form-section-body">
+
+        <!-- Info callout -->
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:0.6rem 0.85rem;margin-bottom:1rem;display:flex;align-items:flex-start;gap:0.5rem;">
+          <i class="fas fa-info-circle" style="color:#3b82f6;margin-top:2px;flex-shrink:0;"></i>
+          <span style="font-size:0.78rem;color:#1e40af;line-height:1.5;">
+            <strong>Preview images</strong> appear in a thumbnail gallery strip on the book's detail page. Upload interior pages, author photo, or any images that help buyers decide to purchase.
+          </span>
+        </div>
+
+        <!-- Existing images grid (edit mode) -->
+        {% if preview_images %}
+        <div style="margin-bottom:1rem;">
+          <div style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.5rem;">
+            <i class="fas fa-check-circle me-1" style="color:#10b981;"></i>
+            {{ preview_images|length }} Preview Image{{ preview_images|length|pluralize }} Uploaded
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:0.75rem;">
+            {% for img in preview_images %}
+            <div style="position:relative;border-radius:8px;overflow:hidden;border:1.5px solid #e2e8f0;box-shadow:0 2px 6px rgba(0,0,0,0.07);">
+              <img src="{{ img.image.url }}" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block;" alt="Preview {{ forloop.counter }}"/>
+              <form method="post" action="{% url 'panel-book-image-delete' img.id %}">
+                {% csrf_token %}
+                <button type="submit" title="Remove this preview image"
+                  style="position:absolute;top:4px;right:4px;background:rgba(239,68,68,0.85);border:none;color:#fff;width:22px;height:22px;border-radius:50%;font-size:0.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"
+                  onclick="return confirm('Remove this preview image?')">
+                  <i class="fas fa-times"></i>
+                </button>
+              </form>
+              <div style="padding:4px 6px;font-size:0.62rem;color:#64748b;text-align:center;background:#fafafa;">#{{ forloop.counter }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Upload zone -->
+        <div class="fg" style="margin-bottom:0;">
+          <label>
+            {% if preview_images %}Add More Preview Images{% else %}Add Preview Images{% endif %}
+            <span style="font-size:0.68rem;color:#94a3b8;">Select multiple — JPG, PNG, WEBP</span>
+          </label>
+          <div id="previewDropZone"
+               style="border:2px dashed #c7d2fe;border-radius:12px;padding:1.6rem 1rem;text-align:center;cursor:pointer;background:#fafafe;transition:all 0.2s;"
+               onclick="document.getElementById('previewImagesInput').click()"
+               ondragover="event.preventDefault();this.style.borderColor='#6366f1';this.style.background='#ede9fe';"
+               ondragleave="this.style.borderColor='#c7d2fe';this.style.background='#fafafe';"
+               ondrop="handlePreviewDrop(event)">
+            <i class="fas fa-cloud-upload-alt" style="font-size:2.6rem;color:#6366f1;display:block;margin-bottom:0.5rem;"></i>
+            <div style="font-size:0.88rem;font-weight:700;color:#6366f1;">Click or drag &amp; drop images here</div>
+            <div style="font-size:0.72rem;color:#94a3b8;margin-top:4px;">You can select multiple files at once</div>
+          </div>
+          <input type="file" id="previewImagesInput" name="preview_images" accept="image/*" multiple style="display:none;" onchange="showPreviewThumbs(this.files)"/>
+          <div id="newPreviewGrid" style="display:none;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:0.5rem;margin-top:0.75rem;"></div>
+        </div>
+
       </div>
     </div>
 
@@ -547,6 +621,39 @@
     const input = document.getElementById('bookFileInput');
     input.files = e.dataTransfer.files;
     showFileInfo(input);
+  }
+
+  // ─── New preview images grid ──────────────────────────────────
+  function showPreviewThumbs(files) {
+    const grid = document.getElementById('newPreviewGrid');
+    const zone = document.getElementById('previewDropZone');
+    grid.innerHTML = '';
+    if (!files || files.length === 0) { grid.style.display = 'none'; return; }
+    grid.style.display = 'grid';
+    Array.from(files).forEach((file, i) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:relative;border-radius:6px;overflow:hidden;border:1.5px solid #c7d2fe;';
+        wrap.innerHTML = `<img src="${e.target.result}" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block;"/>
+          <div style="padding:3px;font-size:0.6rem;color:#6366f1;text-align:center;background:#f0f0ff;">New ${i+1}</div>`;
+        grid.appendChild(wrap);
+      };
+      reader.readAsDataURL(file);
+    });
+    zone.style.borderColor = '#10b981';
+    zone.style.background  = '#f0fdf4';
+    zone.querySelector('i').style.color = '#10b981';
+    zone.querySelector('div').textContent = `${files.length} image${files.length > 1 ? 's' : ''} selected`;
+  }
+
+  function handlePreviewDrop(e) {
+    e.preventDefault();
+    document.getElementById('previewDropZone').style.borderColor = '#c7d2fe';
+    document.getElementById('previewDropZone').style.background  = '#fafafe';
+    const input = document.getElementById('previewImagesInput');
+    input.files = e.dataTransfer.files;
+    showPreviewThumbs(e.dataTransfer.files);
   }
 
   // Reset

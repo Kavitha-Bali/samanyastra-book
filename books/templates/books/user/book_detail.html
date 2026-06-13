@@ -7,21 +7,76 @@
 </a>
 
 <div class="row g-4">
-  <!-- Cover -->
-  <div class="col-12 col-md-4 col-lg-3">
-    {% if book.cover_image %}
-      <img src="{{ book.cover_image.url }}" class="w-100 rounded-3 shadow" alt="{{ book.title }}" style="max-height:420px;object-fit:cover;"/>
-    {% elif book.thumb %}
-      <img src="{{ book.thumb }}" class="w-100 rounded-3 shadow" alt="{{ book.title }}" style="max-height:420px;object-fit:cover;"/>
-    {% else %}
-      <div class="rounded-3 d-flex align-items-center justify-content-center" style="aspect-ratio:2/3;background:linear-gradient(160deg,#e0e7ff,#c7d2fe);">
-        <i class="fas fa-book" style="font-size:5rem;color:#6366f1;opacity:0.5;"></i>
+
+  <!-- ── Cover + Gallery ── -->
+  <div class="col-12 col-md-5 col-lg-4">
+
+    <!-- Main image -->
+    <div style="border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(15,23,42,0.18);margin-bottom:0.9rem;background:#f1f5f9;position:relative;">
+      {% if book.cover_image %}
+        <img id="gallery-main" src="{{ book.cover_image.url }}"
+             style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block;transition:opacity 0.22s;"
+             alt="{{ book.title }}"/>
+      {% elif book.thumb %}
+        <img id="gallery-main" src="{{ book.thumb }}"
+             style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block;transition:opacity 0.22s;"
+             alt="{{ book.title }}"/>
+      {% else %}
+        <div id="gallery-main"
+             style="width:100%;aspect-ratio:3/4;background:linear-gradient(160deg,#e0e7ff 0%,#c7d2fe 60%,#a5b4fc 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.75rem;">
+          <i class="fas fa-book-open" style="font-size:5rem;color:#6366f1;opacity:0.35;"></i>
+          <span style="font-size:0.75rem;color:#6366f1;font-weight:700;letter-spacing:3px;text-transform:uppercase;opacity:0.5;">No Cover</span>
+        </div>
+      {% endif %}
+
+      <!-- Image count badge -->
+      {% if preview_images %}
+      <div style="position:absolute;bottom:10px;right:10px;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);border-radius:20px;padding:3px 10px;display:flex;align-items:center;gap:4px;">
+        <i class="fas fa-images" style="color:#fff;font-size:0.65rem;"></i>
+        <span style="color:#fff;font-size:0.7rem;font-weight:600;">{{ preview_images|length|add:1 }} photos</span>
       </div>
+      {% endif %}
+    </div>
+
+    <!-- Thumbnail strip -->
+    {% if book.cover_image or book.thumb or preview_images %}
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem;" id="thumbStrip">
+
+      {% if book.cover_image %}
+      <div class="gallery-thumb active-thumb" data-src="{{ book.cover_image.url }}"
+           style="width:62px;height:82px;border-radius:9px;overflow:hidden;cursor:pointer;border:2.5px solid #6366f1;flex-shrink:0;">
+        <img src="{{ book.cover_image.url }}" style="width:100%;height:100%;object-fit:cover;" alt="Cover"/>
+        <div style="text-align:center;font-size:0.55rem;font-weight:700;color:#6366f1;background:#eef2ff;padding:2px 0;">Cover</div>
+      </div>
+      {% elif book.thumb %}
+      <div class="gallery-thumb active-thumb" data-src="{{ book.thumb }}"
+           style="width:62px;height:82px;border-radius:9px;overflow:hidden;cursor:pointer;border:2.5px solid #6366f1;flex-shrink:0;">
+        <img src="{{ book.thumb }}" style="width:100%;height:100%;object-fit:cover;" alt="Cover"/>
+        <div style="text-align:center;font-size:0.55rem;font-weight:700;color:#6366f1;background:#eef2ff;padding:2px 0;">Cover</div>
+      </div>
+      {% endif %}
+
+      {% for img in preview_images %}
+      <div class="gallery-thumb" data-src="{{ img.image.url }}"
+           style="width:62px;height:82px;border-radius:9px;overflow:hidden;cursor:pointer;border:2.5px solid #e2e8f0;flex-shrink:0;">
+        <img src="{{ img.image.url }}" style="width:100%;height:100%;object-fit:cover;" alt="Preview {{ forloop.counter }}"/>
+        <div style="text-align:center;font-size:0.55rem;font-weight:600;color:#94a3b8;background:#f8fafc;padding:2px 0;">{{ forloop.counter }}</div>
+      </div>
+      {% endfor %}
+
+    </div>
     {% endif %}
+
+
+    <style>
+      .gallery-thumb { transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s; }
+      .gallery-thumb:hover { border-color: #818cf8 !important; box-shadow: 0 3px 10px rgba(99,102,241,0.3) !important; transform: translateY(-2px); }
+      .gallery-thumb.active-thumb { border-color: #6366f1 !important; box-shadow: 0 3px 10px rgba(99,102,241,0.3) !important; }
+    </style>
   </div>
 
   <!-- Details -->
-  <div class="col-12 col-md-8 col-lg-9">
+  <div class="col-12 col-md-7 col-lg-8">
     <h1 style="font-size:1.8rem;font-weight:800;color:#1e293b;margin-bottom:0.3rem;">{{ book.title }}</h1>
     <p style="color:#64748b;font-size:1rem;margin-bottom:0.8rem;">by <strong>{{ book.author }}</strong></p>
 
@@ -72,36 +127,163 @@
           </a>
         {% endif %}
         <button id="razorpayBtn" onclick="openRazorpay()" class="btn fw-bold text-white px-4" style="background:linear-gradient(135deg,#ff6b35,#c0392b);border:none;">
-          <i class="fas fa-bolt me-1"></i>Buy with Razorpay
+          <i class="fas fa-bolt me-1"></i>proced to pay
         </button>
       {% endif %}
     </div>
   </div>
 </div>
 
-<!-- Ratings Section -->
-<div class="mt-5">
-  <h2 class="fw-bold mb-3" style="font-size:1.1rem;color:#1e293b;border-left:4px solid #ff6b35;padding-left:0.6rem;">
+<!-- ── Reviews + Write-a-Review Section ── -->
+<div class="mt-5" id="reviews-section">
+
+  <h2 class="fw-bold mb-4" style="font-size:1.1rem;color:#1e293b;border-left:4px solid #ff6b35;padding-left:0.6rem;">
     <i class="fas fa-comments me-2" style="color:#ff6b35;"></i>Customer Reviews
+    <span style="font-size:0.78rem;font-weight:500;color:#94a3b8;margin-left:8px;">{{ ratings.count }} review{{ ratings.count|pluralize }}</span>
   </h2>
+
+  <!-- Existing reviews -->
   {% for r in ratings %}
-  <div class="card border-0 shadow-sm mb-3 p-3" style="border-radius:10px;">
+  <div class="review-card {% if r.user == request.user %}own-review{% endif %}" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:0.85rem;box-shadow:0 1px 4px rgba(15,23,42,0.06);">
     <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-      <span class="fw-bold" style="color:#1e293b;"><i class="fas fa-user-circle me-1 text-muted"></i>{{ r.user.username }}</span>
-      <span style="color:#f59e0b;letter-spacing:2px;">
-        {% for i in "12345" %}{% if forloop.counter <= r.stars %}★{% else %}☆{% endif %}{% endfor %}
-      </span>
-      <span class="text-muted" style="font-size:0.75rem;"><i class="fas fa-calendar-alt me-1"></i>{{ r.rated_on|date:"d M Y" }}</span>
+      <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#818cf8);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="color:#fff;font-size:0.72rem;font-weight:700;">{{ r.user.username|first|upper }}</span>
+      </div>
+      <span class="fw-bold" style="color:#1e293b;font-size:0.9rem;">{{ r.user.username }}</span>
+      {% if r.user == request.user %}
+        <span style="background:#eef2ff;color:#4f46e5;border-radius:20px;padding:1px 8px;font-size:0.62rem;font-weight:700;">You</span>
+      {% endif %}
+      <div style="display:flex;gap:1px;margin-left:2px;">
+        {% for i in "12345" %}
+          {% if forloop.counter <= r.stars %}
+            <i class="fas fa-star" style="font-size:0.78rem;color:#f59e0b;"></i>
+          {% else %}
+            <i class="fas fa-star" style="font-size:0.78rem;color:#e2e8f0;"></i>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <span style="font-size:0.72rem;color:#94a3b8;margin-left:auto;"><i class="fas fa-calendar-alt me-1"></i>{{ r.rated_on|date:"d M Y" }}</span>
     </div>
-    {% if r.review %}<p class="mb-0" style="color:#475569;font-size:0.88rem;">{{ r.review }}</p>{% endif %}
+    {% if r.review %}
+      <p style="color:#475569;font-size:0.88rem;line-height:1.65;margin:0;">{{ r.review }}</p>
+    {% else %}
+      <p style="color:#c4c9d4;font-size:0.8rem;font-style:italic;margin:0;">No written review.</p>
+    {% endif %}
   </div>
   {% empty %}
-    <div class="text-center py-4 text-muted">
-      <i class="fas fa-comment-slash mb-2" style="font-size:2rem;display:block;"></i>
-      <p>No reviews yet. Be the first to review!</p>
-    </div>
+  <div style="text-align:center;padding:2.5rem;background:#f8fafc;border-radius:12px;border:1px dashed #e2e8f0;margin-bottom:1.5rem;">
+    <i class="fas fa-comment-slash" style="font-size:2rem;color:#c4c9d4;display:block;margin-bottom:0.6rem;"></i>
+    <p style="color:#94a3b8;margin:0;font-size:0.9rem;">No reviews yet. Be the first to share your thoughts!</p>
+  </div>
   {% endfor %}
+
+  <!-- ── Inline Review Form ── -->
+  {% if request.user.is_authenticated %}
+    {% if purchased %}
+    <div id="review-form-box" style="background:#fff;border:2px solid #fde68a;border-radius:14px;overflow:hidden;margin-top:1.5rem;box-shadow:0 4px 16px rgba(245,158,11,0.1);">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:0.85rem 1.3rem;display:flex;align-items:center;justify-content:space-between;">
+        <h3 style="color:#fff;font-size:0.9rem;font-weight:700;margin:0;">
+          {% if user_rating %}<i class="fas fa-edit me-2"></i>{% else %}<i class="fas fa-pen-nib me-2"></i>{% endif %}
+          {% if user_rating %}Edit Your Review{% else %}Write a Review{% endif %}
+        </h3>
+        {% if user_rating %}
+          <span style="background:rgba(255,255,255,0.2);color:#fff;border-radius:20px;padding:2px 10px;font-size:0.68rem;font-weight:600;">
+            <i class="fas fa-check-circle me-1"></i>You already reviewed this
+          </span>
+        {% endif %}
+      </div>
+
+      <!-- Body -->
+      <div style="padding:1.4rem 1.3rem;">
+        <form method="post" action="{% url 'rate-book' book.id %}" id="inlineReviewForm">
+          {% csrf_token %}
+
+          <!-- Star picker -->
+          <div style="margin-bottom:1.2rem;">
+            <label style="display:block;font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:0.5rem;">
+              <i class="fas fa-star me-1" style="color:#f59e0b;"></i>Your Rating *
+            </label>
+            <div style="display:flex;gap:6px;align-items:center;" id="inlineStarRow">
+              {% for star in "12345" %}
+              <label class="inline-star-label" data-val="{{ forloop.counter }}"
+                     style="cursor:pointer;font-size:2rem;color:#e2e8f0;transition:color 0.12s,transform 0.1s;line-height:1;">
+                <input type="radio" name="stars" value="{{ forloop.counter }}"
+                       {% if user_rating.stars == forloop.counter %}checked{% endif %}
+                       style="display:none;"/>
+                <i class="fas fa-star"></i>
+              </label>
+              {% endfor %}
+              <span id="starLabel" style="font-size:0.8rem;color:#94a3b8;margin-left:6px;font-weight:600;"></span>
+            </div>
+          </div>
+
+          <!-- Review textarea -->
+          <div style="margin-bottom:1.2rem;">
+            <label style="display:block;font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:0.5rem;">
+              <i class="fas fa-comment me-1"></i>Your Review
+              <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(optional)</span>
+            </label>
+            <textarea name="review" id="reviewTextarea" rows="4"
+              placeholder="Share what you liked, what you learned, or who you'd recommend this book to…"
+              maxlength="1000"
+              oninput="updateCharCount(this)"
+              style="width:100%;padding:0.75rem 1rem;border:2px solid #e2e8f0;border-radius:10px;font-size:0.88rem;font-family:inherit;color:#1e293b;resize:vertical;outline:none;transition:border-color 0.2s,box-shadow 0.2s;background:#fafafa;line-height:1.6;">{{ user_rating.review|default:'' }}</textarea>
+            <div style="display:flex;justify-content:space-between;margin-top:4px;">
+              <span style="font-size:0.7rem;color:#94a3b8;">Be honest and helpful to other readers.</span>
+              <span id="charCount" style="font-size:0.7rem;color:#94a3b8;"><span id="charNum">{{ user_rating.review|length|default:0 }}</span>/1000</span>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" id="reviewSubmitBtn"
+            style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;padding:11px 28px;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(245,158,11,0.35);transition:transform 0.15s,box-shadow 0.15s;">
+            <i class="fas fa-paper-plane"></i>
+            {% if user_rating %}Update Review{% else %}Submit Review{% endif %}
+          </button>
+          {% if user_rating %}
+          <a href="{% url 'user-book-detail' book.id %}" style="display:inline-flex;align-items:center;gap:6px;margin-left:0.75rem;color:#94a3b8;font-size:0.84rem;font-weight:600;text-decoration:none;">
+            <i class="fas fa-times"></i> Cancel
+          </a>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- Not purchased — teaser -->
+    <div style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:14px;padding:1.5rem;text-align:center;margin-top:1.5rem;">
+      <i class="fas fa-lock" style="font-size:1.8rem;color:#c4c9d4;display:block;margin-bottom:0.5rem;"></i>
+      <p style="color:#64748b;font-size:0.88rem;margin-bottom:0.75rem;">Purchase this book to leave a review.</p>
+      <button onclick="openRazorpay()" style="background:linear-gradient(135deg,#ff6b35,#c0392b);color:#fff;border:none;border-radius:8px;padding:8px 22px;font-size:0.85rem;font-weight:700;cursor:pointer;">
+        <i class="fas fa-bolt me-1"></i>Buy Now
+      </button>
+    </div>
+    {% endif %}
+
+  {% else %}
+  <!-- Not logged in -->
+  <div style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:14px;padding:1.5rem;text-align:center;margin-top:1.5rem;">
+    <i class="fas fa-user-circle" style="font-size:1.8rem;color:#c4c9d4;display:block;margin-bottom:0.5rem;"></i>
+    <p style="color:#64748b;font-size:0.88rem;margin-bottom:0.75rem;">Log in to write a review.</p>
+    <a href="{% url 'user-login' %}" style="background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border-radius:8px;padding:8px 22px;font-size:0.85rem;font-weight:700;text-decoration:none;">
+      <i class="fas fa-sign-in-alt me-1"></i>Login
+    </a>
+  </div>
+  {% endif %}
+
 </div>
+
+<style>
+  .review-card { transition: box-shadow 0.18s; }
+  .review-card:hover { box-shadow: 0 4px 14px rgba(15,23,42,0.09) !important; }
+  .own-review { border-color: #fde68a !important; }
+  #reviewTextarea:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.15); background: #fff; }
+  #reviewSubmitBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245,158,11,0.45); }
+  .inline-star-label:hover { transform: scale(1.15); }
+</style>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -154,5 +336,72 @@ async function openRazorpay() {
     alert('Something went wrong. Please try again.');
   }
 }
+</script>
+
+<script>
+/* ── Inline star picker ── */
+(function () {
+  const labels = document.querySelectorAll('.inline-star-label');
+  if (!labels.length) return;
+
+  const starNames = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+  const labelEl   = document.getElementById('starLabel');
+  let current     = 0;
+
+  /* pre-select if editing existing review */
+  labels.forEach(function (lbl) {
+    var radio = lbl.querySelector('input[type="radio"]');
+    if (radio && radio.checked) { current = parseInt(lbl.dataset.val, 10); }
+  });
+  paintStars(current);
+
+  labels.forEach(function (lbl) {
+    var val = parseInt(lbl.dataset.val, 10);
+
+    lbl.addEventListener('mouseover', function () { paintStars(val); });
+    lbl.addEventListener('mouseout',  function () { paintStars(current); });
+    lbl.addEventListener('click',     function () {
+      current = val;
+      lbl.querySelector('input').checked = true;
+      paintStars(current);
+    });
+  });
+
+  function paintStars(n) {
+    labels.forEach(function (lbl) {
+      var v = parseInt(lbl.dataset.val, 10);
+      lbl.style.color     = v <= n ? '#f59e0b' : '#e2e8f0';
+      lbl.style.transform = v <= n ? 'scale(1.12)' : 'scale(1)';
+    });
+    if (labelEl) labelEl.textContent = n ? starNames[n] : '';
+  }
+})();
+
+/* ── Char counter ── */
+(function () {
+  var ta = document.getElementById('reviewTextarea');
+  var cn = document.getElementById('charNum');
+  if (!ta || !cn) return;
+  ta.addEventListener('input', function () { cn.textContent = ta.value.length; });
+})();
+
+/* ── Gallery switcher ── */
+(function () {
+  function switchMain(thumb) {
+    var url  = thumb.dataset.src;
+    var main = document.getElementById('gallery-main');
+    if (!main || !url) return;
+    main.style.opacity = '0';
+    setTimeout(function () {
+      if (main.tagName === 'IMG') { main.src = url; }
+      main.style.opacity = '1';
+    }, 160);
+    document.querySelectorAll('.gallery-thumb').forEach(function (t) { t.classList.remove('active-thumb'); });
+    thumb.classList.add('active-thumb');
+  }
+  document.querySelectorAll('.gallery-thumb').forEach(function (t) {
+    t.addEventListener('click', function () { switchMain(t); });
+  });
+})();
 </script>
 {% endblock %}

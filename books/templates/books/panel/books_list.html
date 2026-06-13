@@ -118,6 +118,49 @@
 
   .bk-title-name { font-size: 0.85rem; font-weight: 700; color: #1e293b; line-height: 1.3; }
   .bk-author { font-size: 0.72rem; color: #94a3b8; margin-top: 1px; }
+
+  /* ── Cover quick-upload ── */
+  .btn-cover-upload {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #fff7ed; color: #c2410c;
+    border: 1.5px solid #fed7aa; border-radius: 7px;
+    padding: 4px 9px; font-size: 0.7rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-cover-upload:hover { background: #ffedd5; border-color: #fb923c; }
+  .btn-cover-change {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #f0fdf4; color: #15803d;
+    border: 1.5px solid #bbf7d0; border-radius: 7px;
+    padding: 4px 9px; font-size: 0.7rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .btn-cover-change:hover { background: #dcfce7; }
+  .cover-missing-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: #fff7ed; color: #c2410c;
+    border: 1px solid #fed7aa; border-radius: 20px;
+    padding: 2px 6px; font-size: 0.62rem; font-weight: 700;
+  }
+
+  /* ── Preview quick-upload ── */
+  .btn-preview-add {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #f5f3ff; color: #6d28d9;
+    border: 1.5px solid #ddd6fe; border-radius: 7px;
+    padding: 4px 9px; font-size: 0.7rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-preview-add:hover { background: #ede9fe; border-color: #a78bfa; }
+  .preview-count-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: #ede9fe; color: #6d28d9;
+    border: 1px solid #ddd6fe; border-radius: 20px;
+    padding: 2px 7px; font-size: 0.62rem; font-weight: 700;
+  }
   .bk-price { font-size: 0.97rem; font-weight: 800; color: #059669; }
   .bk-tag {
     display: inline-flex; align-items: center;
@@ -182,10 +225,17 @@
     </div>
   </div>
   <div class="bk-stat-card">
-    <div class="bk-stat-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-pen"></i></div>
+    <div class="bk-stat-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-image"></i></div>
     <div class="bk-stat-body">
-      <div class="bk-stat-num">Edit</div>
-      <div class="bk-stat-lbl">Manage Below</div>
+      <div class="bk-stat-num">{{ covers_count }}</div>
+      <div class="bk-stat-lbl">Have Cover</div>
+    </div>
+  </div>
+  <div class="bk-stat-card">
+    <div class="bk-stat-icon" style="background:#fff7ed;color:#c2410c;"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="bk-stat-body">
+      <div class="bk-stat-num">{{ no_cover_count }}</div>
+      <div class="bk-stat-lbl">No Cover</div>
     </div>
   </div>
 </div>
@@ -221,6 +271,8 @@
           <th>Pages</th>
           <th>Price</th>
           <th>Tags</th>
+          <th style="text-align:center;">Cover</th>
+          <th style="text-align:center;">Previews</th>
           <th style="text-align:center;">Actions</th>
         </tr>
       </thead>
@@ -279,6 +331,64 @@
             {% endif %}
           </td>
 
+          <!-- Quick cover upload -->
+          <td style="text-align:center;">
+            <form method="post" action="{% url 'panel-book-cover' book.id %}" enctype="multipart/form-data">
+              {% csrf_token %}
+              <input type="file" id="ci-{{ book.id }}" name="cover_image" accept="image/*"
+                     style="display:none;" onchange="this.form.submit()"/>
+              {% if book.cover_image %}
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                  <img src="{{ book.cover_image.url }}"
+                       style="height:44px;width:32px;object-fit:cover;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.18);"
+                       alt="{{ book.title }}" title="{{ book.title }} cover"/>
+                  <button type="button" class="btn-cover-change"
+                          onclick="document.getElementById('ci-{{ book.id }}').click()"
+                          title="Replace cover image">
+                    <i class="fas fa-sync-alt"></i> Change
+                  </button>
+                </div>
+              {% else %}
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                  <span class="cover-missing-badge"><i class="fas fa-exclamation-triangle"></i> No Cover</span>
+                  <button type="button" class="btn-cover-upload"
+                          onclick="document.getElementById('ci-{{ book.id }}').click()"
+                          title="Upload a cover image for this book">
+                    <i class="fas fa-camera"></i> Upload Cover
+                  </button>
+                </div>
+              {% endif %}
+            </form>
+          </td>
+
+          <!-- Quick preview upload -->
+          <td style="text-align:center;">
+            <form method="post" action="{% url 'panel-book-previews' book.id %}" enctype="multipart/form-data">
+              {% csrf_token %}
+              <input type="file" id="pi-{{ book.id }}" name="preview_images" accept="image/*" multiple
+                     style="display:none;" onchange="submitPreviewForm(this)"/>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                {% if book.preview_count > 0 %}
+                  <span class="preview-count-badge">
+                    <i class="fas fa-images"></i> {{ book.preview_count }}
+                  </span>
+                  <button type="button" class="btn-preview-add"
+                          onclick="document.getElementById('pi-{{ book.id }}').click()"
+                          title="Add more preview images (select multiple)">
+                    <i class="fas fa-plus"></i> Add More
+                  </button>
+                {% else %}
+                  <span style="color:#c4c9d4;font-size:0.68rem;font-weight:600;">No previews</span>
+                  <button type="button" class="btn-preview-add"
+                          onclick="document.getElementById('pi-{{ book.id }}').click()"
+                          title="Upload preview images for this book (select multiple)">
+                    <i class="fas fa-images"></i> Add Previews
+                  </button>
+                {% endif %}
+              </div>
+            </form>
+          </td>
+
           <td>
             <div style="display:flex;gap:5px;align-items:center;justify-content:center;">
               <a href="{% url 'panel-book-edit' book.id %}" class="btn btn-edit">
@@ -293,7 +403,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="8" class="bk-empty-cell">
+          <td colspan="10" class="bk-empty-cell">
             <div class="bk-empty-icon"><i class="fas fa-book-open"></i></div>
             <strong style="display:block;font-size:1rem;color:#1e293b;margin-bottom:0.35rem;">No books yet</strong>
             <span style="color:#94a3b8;font-size:0.85rem;">Start by adding your first book to the catalogue.</span>
@@ -324,6 +434,15 @@
 </div>
 
 <script>
+  function submitPreviewForm(input) {
+    if (!input.files || input.files.length === 0) return;
+    const count = input.files.length;
+    const btn   = input.closest('form').querySelector('button[type="button"]');
+    btn.disabled   = true;
+    btn.innerHTML  = `<i class="fas fa-spinner fa-spin"></i> Uploading ${count}…`;
+    input.closest('form').submit();
+  }
+
   const totalBooks = {{ books.count }};
 
   function filterBooks(q) {
