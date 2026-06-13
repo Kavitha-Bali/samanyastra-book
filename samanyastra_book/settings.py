@@ -3,16 +3,19 @@ import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load .env
+# Load .env (silently skipped in Docker build where .env is intentionally absent)
 env = environ.Env(
     DEBUG=(bool, False),
 )
-environ.Env.read_env(BASE_DIR / ".env")
+_env_file = BASE_DIR / ".env"
+if _env_file.exists():
+    environ.Env.read_env(_env_file)
 
 # ── Secrets ──────────────────────────────────────────────────
-SECRET_KEY = env("SECRET_KEY")
-DEBUG = env("DEBUG")
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS") + [".samanyastra.com"]
+SECRET_KEY = env("SECRET_KEY", default="insecure-build-placeholder")
+DEBUG = True
+ALLOWED_HOSTS      = env.list("ALLOWED_HOSTS", default=[]) + [".samanyastra.com"]
+CSRF_TRUSTED_ORIGINS = ["https://*.samanyastra.com"]
 
 # ── Applications ─────────────────────────────────────────────
 INSTALLED_APPS = [
@@ -31,6 +34,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -62,11 +66,11 @@ WSGI_APPLICATION = "samanyastra_book.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("DB_NAME"),
-        "USER": env("DB_USER"),
-        "PASSWORD": env("DB_PASSWORD"),
-        "HOST": env("DB_HOST"),
-        "PORT": env("DB_PORT"),
+        "NAME":     env("DB_NAME",     default=""),
+        "USER":     env("DB_USER",     default=""),
+        "PASSWORD": env("DB_PASSWORD", default=""),
+        "HOST":     env("DB_HOST",     default=""),
+        "PORT":     env("DB_PORT",     default="5432"),
     }
 }
 
@@ -87,9 +91,11 @@ USE_I18N = True
 USE_TZ = True
 
 # ── Static / Media ────────────────────────────────────────────
-STATIC_URL = "static/"
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+STATIC_URL  = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+MEDIA_URL   = "/media/"
+MEDIA_ROOT  = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -111,14 +117,14 @@ REST_FRAMEWORK = {
 }
 
 # ── Razorpay ──────────────────────────────────────────────────
-RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID")
-RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET")
+RAZORPAY_KEY_ID     = env("RAZORPAY_KEY_ID",     default="")
+RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET", default="")
 
 # ── Outlook ──────────────────────────────────────────────────
-OUTLOOK_TENANT_ID = env("OUTLOOK_TENANT_ID")
-OUTLOOK_CLIENT_ID = env("OUTLOOK_CLIENT_ID")
-OUTLOOK_CLIENT_SECRET = env("OUTLOOK_CLIENT_SECRET")
+OUTLOOK_TENANT_ID     = env("OUTLOOK_TENANT_ID",     default="")
+OUTLOOK_CLIENT_ID     = env("OUTLOOK_CLIENT_ID",     default="")
+OUTLOOK_CLIENT_SECRET = env("OUTLOOK_CLIENT_SECRET", default="")
 
 # ── Celery ────────────────────────────────────────────────────
-CELERY_BROKER_URL = env("CELERY_BROKER_URL")
-CELERY_TIMEZONE = TIME_ZONE
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="")
+CELERY_TIMEZONE   = TIME_ZONE
