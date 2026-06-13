@@ -1,3 +1,4 @@
+from django.db.models import Count
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -15,7 +16,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import Books, UserProfile, Cart, Transaction, Rating, Promocode
+from .models import Books, BookImage, UserProfile, Cart, Transaction, Rating, Promocode
 
 BOOK_GENRES = [
     'Fiction', 'Non-Fiction', 'Science', 'History', 'Technology',
@@ -106,8 +107,14 @@ def panel_dashboard(request):
 @login_required(login_url='panel-login')
 @staff_only
 def panel_books(request):
+    books = Books.objects.annotate(preview_count=Count('images')).order_by('title')
+    total = books.count()
+    covers_count   = books.exclude(cover_image='').exclude(cover_image=None).count()
+    no_cover_count = total - covers_count
     return render(request, 'books/panel/books_list.html', {
-        'books': Books.objects.all().order_by('title')
+        'books':          books,
+        'covers_count':   covers_count,
+        'no_cover_count': no_cover_count,
     })
 
 
@@ -116,7 +123,7 @@ def panel_books(request):
 def panel_book_add(request):
     if request.method == 'POST':
         d, f = request.POST, request.FILES
-        Books.objects.create(
+        book = Books.objects.create(
             name=d['name'], title=d['title'], author=d['author'],
             description=d['description'], language=d['language'],
             isbn=d['isbn'], pages=int(d['pages']), amount=Decimal(d['amount']),
@@ -126,6 +133,8 @@ def panel_book_add(request):
             file=f.get('file') or None,
             tags=d.get('tags', ''),
         )
+        for i, img_file in enumerate(request.FILES.getlist('preview_images')):
+            BookImage.objects.create(book=book, image=img_file, order=i)
         messages.success(request, f'Book "{d["title"]}" added successfully.')
         return redirect('panel-books')
     return render(request, 'books/panel/book_form.html', {'genres': BOOK_GENRES})
@@ -153,9 +162,59 @@ def panel_book_edit(request, book_id):
         if f.get('file'):
             book.file = f['file']
         book.save()
+        existing_count = book.images.count()
+        for i, img_file in enumerate(request.FILES.getlist('preview_images')):
+            BookImage.objects.create(book=book, image=img_file, order=existing_count + i)
         messages.success(request, f'Book "{book.title}" updated.')
         return redirect('panel-books')
-    return render(request, 'books/panel/book_form.html', {'book': book, 'genres': BOOK_GENRES})
+    return render(request, 'books/panel/book_form.html', {
+        'book': book, 'genres': BOOK_GENRES,
+        'preview_images': book.images.all(),
+    })
+
+
+@login_required(login_url='panel-login')
+@staff_only
+def panel_book_cover_upload(request, book_id):
+    book = get_object_or_404(Books, id=book_id)
+    if request.method == 'POST' and request.FILES.get('cover_image'):
+        book.cover_image = request.FILES['cover_image']
+        book.save()
+        messages.success(request, f'Cover image updated for "{book.title}".')
+    else:
+        messages.error(request, 'No image file received.')
+    return redirect('panel-books')
+
+
+@login_required(login_url='panel-login')
+@staff_only
+def panel_book_preview_upload(request, book_id):
+    book = get_object_or_404(Books, id=book_id)
+    next_url = request.POST.get('next') or request.GET.get('next') or 'panel-books'
+    if request.method == 'POST':
+        files = request.FILES.getlist('preview_images')
+        if files:
+            base_order = book.images.count()
+            for i, img_file in enumerate(files):
+                BookImage.objects.create(book=book, image=img_file, order=base_order + i)
+            messages.success(request, f'{len(files)} preview image{"s" if len(files) > 1 else ""} added to "{book.title}".')
+        else:
+            messages.error(request, 'No images received.')
+    if next_url == 'panel-books' or next_url.startswith('/panel/'):
+        return redirect('panel-books')
+    return redirect(next_url)
+
+
+@login_required(login_url='panel-login')
+@staff_only
+def panel_book_image_delete(request, image_id):
+    img = get_object_or_404(BookImage, id=image_id)
+    book_id = img.book.id
+    if request.method == 'POST':
+        img.image.delete(save=False)
+        img.delete()
+        messages.success(request, 'Preview image removed.')
+    return redirect('panel-book-edit', book_id=book_id)
 
 
 @login_required(login_url='panel-login')
@@ -317,6 +376,7 @@ def user_book_detail(request, book_id):
     return render(request, 'books/user/book_detail.html', {
         'book': book, 'ratings': ratings,
         'user_rating': user_rating, 'in_cart': in_cart, 'purchased': purchased,
+        'preview_images': book.images.all(),
     })
 
 
