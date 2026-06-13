@@ -115,8 +115,8 @@ REST_FRAMEWORK = {
 }
 
 # ── Razorpay ──────────────────────────────────────────────────
-RAZORPAY_KEY_ID     = env("RAZORPAY_KEY_ID",     default="")
-RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET", default="")
+RAZORPAY_KEY_ID     = env("RAZORPAY_KEY",     default="")
+RAZORPAY_KEY_SECRET = env("RAZORPAY_SECRET", default="")
 
 # ── Outlook ──────────────────────────────────────────────────
 OUTLOOK_TENANT_ID     = env("OUTLOOK_TENANT_ID",     default="")
