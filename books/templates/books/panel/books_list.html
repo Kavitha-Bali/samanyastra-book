@@ -300,8 +300,8 @@
 
           <td>
             <div class="bk-title-cell">
-              {% if book.cover_image %}
-                <img src="{{ book.cover_image.url }}" class="bk-thumb" alt="{{ book.title }}"/>
+              {% if book.cover_url %}
+                <img src="{{ book.cover_url }}" class="bk-thumb" alt="{{ book.title }}"/>
               {% else %}
                 <div class="bk-thumb-ph"><i class="fas fa-book"></i></div>
               {% endif %}
@@ -365,7 +365,7 @@
                      style="display:none;" onchange="this.form.submit()"/>
               {% if book.cover_image %}
                 <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-                  <img src="{{ book.cover_image.url }}"
+                  <img src="{{ book.cover_url }}"
                        style="height:44px;width:32px;object-fit:cover;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.18);"
                        alt="{{ book.title }}" title="{{ book.title }} cover"/>
                   <button type="button" class="btn-cover-change"
@@ -373,6 +373,12 @@
                           title="Replace cover image">
                     <i class="fas fa-sync-alt"></i> Change
                   </button>
+                  <form method="post" action="{% url 'panel-regenerate-thumbnail' book.id %}" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-preview-add" style="font-size:0.62rem;padding:3px 7px;" title="Regenerate compressed thumbnail">
+                      <i class="fas fa-compress-alt"></i> Regen
+                    </button>
+                  </form>
                 </div>
               {% else %}
                 <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">

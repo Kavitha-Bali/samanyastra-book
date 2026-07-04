@@ -31,8 +31,15 @@
         <tr>
           <td class="text-muted" style="padding:12px 14px;">{{ forloop.counter }}</td>
           <td style="padding:12px 14px;">
-            <div class="fw-bold" style="color:#1e293b;">{{ txn.book.title }}</div>
-            <div class="text-muted" style="font-size:0.75rem;">{{ txn.book.author }}</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              {% if txn.book.cover_url %}
+                <img src="{{ txn.book.cover_url }}" style="width:36px;height:50px;object-fit:cover;border-radius:4px;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,0.15);" alt="{{ txn.book.title }}"/>
+              {% endif %}
+              <div>
+                <div class="fw-bold" style="color:#1e293b;">{{ txn.book.title }}</div>
+                <div class="text-muted" style="font-size:0.75rem;">{{ txn.book.author }}</div>
+              </div>
+            </div>
           </td>
           <td class="fw-bold" style="padding:12px 14px;color:#10b981;font-size:0.95rem;">₹{{ txn.amount_paid }}</td>
           <td style="padding:12px 14px;">

@@ -93,18 +93,8 @@
 
     <!-- Cover image or placeholder -->
     <a href="{% url 'user-book-detail' book.id %}" style="display:block;position:relative;">
-      {% if book.cover_thumbnail %}
-        <img src="{{ book.cover_thumbnail.url }}"
-             style="width:100%;aspect-ratio:3/4;object-fit:cover;"
-             alt="{{ book.title }}"
-             loading="lazy"/>
-      {% elif book.cover_image %}
-        <img src="{{ book.cover_image.url }}"
-             style="width:100%;aspect-ratio:3/4;object-fit:cover;"
-             alt="{{ book.title }}"
-             loading="lazy"/>
-      {% elif book.thumb %}
-        <img src="{{ book.thumb }}"
+      {% if book.cover_url %}
+        <img src="{{ book.cover_url }}"
              style="width:100%;aspect-ratio:3/4;object-fit:cover;"
              alt="{{ book.title }}"
              loading="lazy"/>

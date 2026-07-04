@@ -14,13 +14,24 @@ class Books(models.Model):
     amount = models.DecimalField(max_digits=8, decimal_places=2)
     published_date = models.DateField( models.DateField, auto_now_add=True)
     cover_image     = models.ImageField(upload_to="covers/", blank=True, null=True)
-    # cover_thumbnail = models.ImageField(upload_to="covers/thumbs/", blank=True, null=True)
+    cover_thumbnail = models.ImageField(upload_to="covers/thumbs/", blank=True, null=True)
     thumb           = models.URLField(blank=True, null=True)
     file = models.FileField(upload_to="books/", blank=True, null=True)
     tags = models.CharField(max_length=400, blank=True, default='')
 
     def __str__(self):
         return self.title
+
+    @property
+    def cover_url(self):
+        """Best available cover: thumbnail > full cover > external thumb > None"""
+        if self.cover_thumbnail:
+            return self.cover_thumbnail.url
+        if self.cover_image:
+            return self.cover_image.url
+        if self.thumb:
+            return self.thumb
+        return None
 
     @property
     def tags_list(self):

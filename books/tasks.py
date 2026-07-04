@@ -7,6 +7,25 @@ from django_messaging.utils import get_object_or_none
 
 
 @shared_task(bind=True)
+def generate_thumbnail_task(self, book_id):
+    """Celery task: generate compressed thumbnail for a book's cover image."""
+    from .models import Books
+    from .signals import build_thumbnail
+    try:
+        book = Books.objects.get(pk=book_id)
+    except Books.DoesNotExist:
+        return False
+    # Clear existing thumbnail so build_thumbnail always overwrites
+    if book.cover_thumbnail:
+        try:
+            book.cover_thumbnail.delete(save=True)
+        except Exception:
+            pass
+        book.refresh_from_db()
+    return build_thumbnail(book)
+
+
+@shared_task(bind=True)
 def send_email(self, template_name, *to_mail, **context):
     """Should not be called directly — use send_email.delay()"""
 

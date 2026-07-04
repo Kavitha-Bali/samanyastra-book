@@ -120,11 +120,11 @@
         <div class="card">
           {% if book.cover_image %}
             <a href="{% if request.user.is_authenticated %}{% url 'user-book-detail' book.id %}{% else %}{% url 'user-login' %}{% endif %}">
-              <img class="card-thumb" src="{{ book.cover_image.url }}" alt="{{ book.title }}" loading="lazy"/>
+              <img class="card-thumb" src="{{ book.cover_url }}" alt="{{ book.title }}" loading="lazy"/>
             </a>
           {% elif book.thumb %}
             <a href="{% if request.user.is_authenticated %}{% url 'user-book-detail' book.id %}{% else %}{% url 'user-login' %}{% endif %}">
-              <img class="card-thumb" src="{{ book.thumb }}" alt="{{ book.title }}" loading="lazy"/>
+              <img class="card-thumb" src="{{ book.cover_url }}" alt="{{ book.title }}" loading="lazy"/>
             </a>
           {% else %}
             <a href="{% if request.user.is_authenticated %}{% url 'user-book-detail' book.id %}{% else %}{% url 'user-login' %}{% endif %}">
