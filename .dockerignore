@@ -19,9 +19,6 @@ venv/
 # Local media uploads
 media/
 
-# Already collected / not needed
-staticfiles/
-
 # IDE
 .idea/
 .vscode/

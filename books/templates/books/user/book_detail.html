@@ -1,5 +1,43 @@
 {% extends 'books/user/base.html' %}
-{% block title %}{{ book.title }} – Samanyastra{% endblock %}
+{% block title %}{{ book.title }} by {{ book.author }} – Buy Ebook | Samanyastra{% endblock %}
+{% block meta_description %}Buy "{{ book.title }}" by {{ book.author }}. {{ book.description|truncatewords:25 }} — Instant digital download. ISBN: {{ book.isbn }}.{% endblock %}
+{% block meta_keywords %}{{ book.title }}, {{ book.author }}, {{ book.tags }}, buy ebook, technical book, programming book, samanyastra{% endblock %}
+{% block canonical %}https://books.samanyastra.com/shop/book/{{ book.id }}/{% endblock %}
+{% block og_type %}book{% endblock %}
+{% block og_title %}{{ book.title }} by {{ book.author }} – Samanyastra{% endblock %}
+{% block og_description %}{{ book.description|truncatewords:30 }}{% endblock %}
+{% block og_url %}https://books.samanyastra.com/shop/book/{{ book.id }}/{% endblock %}
+{% if book.cover_image %}{% block og_image %}{{ book.cover_image.url }}{% endblock %}{% endif %}
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Book",
+  "name": "{{ book.title|escapejs }}",
+  "author": {"@type": "Person", "name": "{{ book.author|escapejs }}"},
+  "isbn": "{{ book.isbn }}",
+  "inLanguage": "{{ book.language }}",
+  "numberOfPages": {{ book.pages }},
+  "description": "{{ book.description|truncatewords:50|escapejs }}",
+  "bookFormat": "EBook",
+  {% if book.cover_image %}"image": "{{ book.cover_image.url }}",{% endif %}
+  "offers": {
+    "@type": "Offer",
+    "price": "{{ book.amount }}",
+    "priceCurrency": "INR",
+    "availability": "https://schema.org/InStock",
+    "url": "https://books.samanyastra.com/shop/book/{{ book.id }}/"
+  }{% if book.ratings.count %},
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ book.avg_rating }}",
+    "reviewCount": {{ book.ratings.count }},
+    "bestRating": "5",
+    "worstRating": "1"
+  }{% endif %}
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <a href="{% url 'user-home' %}" class="d-inline-flex align-items-center gap-1 mb-3 text-decoration-none fw-semibold" style="color:#6366f1;font-size:0.85rem;">
@@ -16,7 +54,7 @@
       {% if book.cover_image %}
         <img id="gallery-main" src="{{ book.cover_image.url }}"
              style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block;transition:opacity 0.22s;"
-             alt="{{ book.title }}"/>
+             alt="{{ book.title }}"
       {% elif book.thumb %}
         <img id="gallery-main" src="{{ book.thumb }}"
              style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block;transition:opacity 0.22s;"
@@ -45,13 +83,14 @@
       {% if book.cover_image %}
       <div class="gallery-thumb active-thumb" data-src="{{ book.cover_image.url }}"
            style="width:62px;height:82px;border-radius:9px;overflow:hidden;cursor:pointer;border:2.5px solid #6366f1;flex-shrink:0;">
-        <img src="{{ book.cover_image.url }}" style="width:100%;height:100%;object-fit:cover;" alt="Cover"/>
+        <img src="{% if book.cover_thumbnail %}{{ book.cover_thumbnail.url }}{% else %}{{ book.cover_image.url }}{% endif %}"
+             style="width:100%;height:100%;object-fit:cover;" alt="Cover" loading="lazy"/>
         <div style="text-align:center;font-size:0.55rem;font-weight:700;color:#6366f1;background:#eef2ff;padding:2px 0;">Cover</div>
       </div>
       {% elif book.thumb %}
       <div class="gallery-thumb active-thumb" data-src="{{ book.thumb }}"
            style="width:62px;height:82px;border-radius:9px;overflow:hidden;cursor:pointer;border:2.5px solid #6366f1;flex-shrink:0;">
-        <img src="{{ book.thumb }}" style="width:100%;height:100%;object-fit:cover;" alt="Cover"/>
+        <img src="{{ book.thumb }}" style="width:100%;height:100%;object-fit:cover;" alt="Cover" loading="lazy"/>
         <div style="text-align:center;font-size:0.55rem;font-weight:700;color:#6366f1;background:#eef2ff;padding:2px 0;">Cover</div>
       </div>
       {% endif %}

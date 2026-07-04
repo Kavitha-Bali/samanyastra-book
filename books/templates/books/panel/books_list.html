@@ -200,7 +200,15 @@
     <div class="bk-banner-title"><i class="fas fa-book-open me-2" style="opacity:0.85;"></i>Books Library</div>
     <div class="bk-banner-sub">{{ books.count }} book{{ books.count|pluralize }} in your catalogue &middot; Manage, edit &amp; organise</div>
   </div>
-  <div class="bk-banner-actions">
+  <div class="bk-banner-actions" style="display:flex;gap:0.6rem;align-items:center;position:relative;z-index:1;flex-shrink:0;">
+    <form method="post" action="{% url 'panel-regenerate-all-thumbnails' %}"
+          onsubmit="return confirm('Regenerate thumbnails for all books with a cover image?')">
+      {% csrf_token %}
+      <button type="submit" class="btn-add-white" style="background:rgba(16,185,129,0.2);border-color:rgba(16,185,129,0.45);">
+        <span class="ba-icon" style="background:rgba(16,185,129,0.3);"><i class="fas fa-image"></i></span>
+        Regenerate All Thumbnails
+      </button>
+    </form>
     <a href="{% url 'panel-book-add' %}" class="btn-add-white">
       <span class="ba-icon"><i class="fas fa-plus"></i></span>
       Add New Book
@@ -238,6 +246,13 @@
       <div class="bk-stat-lbl">No Cover</div>
     </div>
   </div>
+  <div class="bk-stat-card">
+    <div class="bk-stat-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-shopping-bag"></i></div>
+    <div class="bk-stat-body">
+      <div class="bk-stat-num">{{ total_sold }}</div>
+      <div class="bk-stat-lbl">Copies Sold</div>
+    </div>
+  </div>
 </div>
 
 <!-- ── TOOLBAR ── -->
@@ -270,6 +285,7 @@
           <th>Language</th>
           <th>Pages</th>
           <th>Price</th>
+          <th style="text-align:center;">Sold</th>
           <th>Tags</th>
           <th style="text-align:center;">Cover</th>
           <th style="text-align:center;">Previews</th>
@@ -315,6 +331,16 @@
           </td>
 
           <td><span class="bk-price">₹{{ book.amount }}</span></td>
+
+          <td style="text-align:center;">
+            {% if book.copies_sold > 0 %}
+              <span style="display:inline-flex;align-items:center;gap:4px;background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;border-radius:20px;padding:2px 9px;font-size:0.72rem;font-weight:700;">
+                <i class="fas fa-shopping-bag" style="font-size:0.6rem;"></i>{{ book.copies_sold }}
+              </span>
+            {% else %}
+              <span style="color:#c4c9d4;font-size:0.8rem;">—</span>
+            {% endif %}
+          </td>
 
           <td>
             {% if book.tags_list %}
@@ -403,7 +429,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="10" class="bk-empty-cell">
+          <td colspan="11" class="bk-empty-cell">
             <div class="bk-empty-icon"><i class="fas fa-book-open"></i></div>
             <strong style="display:block;font-size:1rem;color:#1e293b;margin-bottom:0.35rem;">No books yet</strong>
             <span style="color:#94a3b8;font-size:0.85rem;">Start by adding your first book to the catalogue.</span>

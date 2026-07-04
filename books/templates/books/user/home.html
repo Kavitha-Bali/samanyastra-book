@@ -1,5 +1,37 @@
 {% extends 'books/user/base.html' %}
-{% block title %}Shop – Samanyastra{% endblock %}
+{% block title %}Samanyastra – Buy Technical Books, Python, Java, Exam Prep & Interview Guides{% endblock %}
+{% block meta_description %}Shop the best technical books on Python, Java, JavaScript, C++, Data Structures, Algorithms, and more. Exam preparation materials and coding interview guides — instant digital download after purchase.{% endblock %}
+{% block meta_keywords %}buy python books online, java programming books, javascript ebook, data structures algorithms book, coding interview preparation, exam MCQ practice, technical ebook store, computer science books india, samanyastra books{% endblock %}
+{% block canonical %}https://books.samanyastra.com/shop/{% endblock %}
+{% block og_type %}website{% endblock %}
+{% block og_title %}Samanyastra – Technical Books & Coding Interview Prep{% endblock %}
+{% block og_description %}Shop Python, Java, JavaScript, C++ books and exam prep materials. Instant digital download. Trusted by students and developers.{% endblock %}
+{% block og_url %}https://books.samanyastra.com/shop/{% endblock %}
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BookStore",
+  "name": "Samanyastra",
+  "url": "https://books.samanyastra.com/shop/",
+  "description": "Technical books, exam preparation materials and coding interview guides covering Python, Java, JavaScript, C++, Data Structures and Algorithms.",
+  "currenciesAccepted": "INR",
+  "paymentAccepted": "Credit Card, Debit Card, UPI, Net Banking",
+  "areaServed": "IN",
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Technical Books Catalog",
+    "itemListElement": [
+      {"@type": "Offer", "itemOffered": {"@type": "Book", "name": "Python Programming Books"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Book", "name": "Java Programming Books"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Book", "name": "Data Structures & Algorithms"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Book", "name": "Coding Interview Preparation"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Book", "name": "Exam MCQ Practice Materials"}}
+    ]
+  }
+}
+</script>
+{% endblock %}
 {% block nav_shop %}active{% endblock %}
 
 {% block content %}
@@ -61,10 +93,21 @@
 
     <!-- Cover image or placeholder -->
     <a href="{% url 'user-book-detail' book.id %}" style="display:block;position:relative;">
-      {% if book.cover_image %}
-        <img src="{{ book.cover_image.url }}" style="width:100%;aspect-ratio:3/4;object-fit:cover;" alt="{{ book.title }}"/>
+      {% if book.cover_thumbnail %}
+        <img src="{{ book.cover_thumbnail.url }}"
+             style="width:100%;aspect-ratio:3/4;object-fit:cover;"
+             alt="{{ book.title }}"
+             loading="lazy"/>
+      {% elif book.cover_image %}
+        <img src="{{ book.cover_image.url }}"
+             style="width:100%;aspect-ratio:3/4;object-fit:cover;"
+             alt="{{ book.title }}"
+             loading="lazy"/>
       {% elif book.thumb %}
-        <img src="{{ book.thumb }}" style="width:100%;aspect-ratio:3/4;object-fit:cover;" alt="{{ book.title }}"/>
+        <img src="{{ book.thumb }}"
+             style="width:100%;aspect-ratio:3/4;object-fit:cover;"
+             alt="{{ book.title }}"
+             loading="lazy"/>
       {% else %}
         <div style="width:100%;aspect-ratio:3/4;background:#eef2ff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.4rem;">
           <i class="fas fa-book-open" style="font-size:2.6rem;color:#4f46e5;opacity:0.4;"></i>
@@ -139,6 +182,32 @@
   </div>
   {% endfor %}
 </div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div style="display:flex;align-items:center;justify-content:center;gap:0.4rem;margin-top:2rem;flex-wrap:wrap;">
+  {% if page_obj.has_previous %}
+    <a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}"
+       style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#4f46e5;font-size:0.8rem;font-weight:600;text-decoration:none;">
+      <i class="fas fa-chevron-left" style="font-size:0.7rem;"></i> Prev
+    </a>
+  {% endif %}
+  {% for num in page_obj.paginator.page_range %}
+    {% if page_obj.number == num %}
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:#4f46e5;color:#fff;font-size:0.82rem;font-weight:700;">{{ num }}</span>
+    {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+      <a href="?{% if q %}q={{ q }}&{% endif %}page={{ num }}"
+         style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#475569;font-size:0.82rem;font-weight:600;text-decoration:none;">{{ num }}</a>
+    {% endif %}
+  {% endfor %}
+  {% if page_obj.has_next %}
+    <a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}"
+       style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#4f46e5;font-size:0.8rem;font-weight:600;text-decoration:none;">
+      Next <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+    </a>
+  {% endif %}
+  <span style="font-size:0.75rem;color:#94a3b8;margin-left:0.5rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+</div>
+{% endif %}
 
 <style>
   .shop-card { transition: transform 0.2s, box-shadow 0.2s; }

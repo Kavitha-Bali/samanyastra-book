@@ -173,6 +173,32 @@
         </div>
       {% endif %}
     </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div style="display:flex;align-items:center;justify-content:center;gap:0.4rem;margin-top:2rem;flex-wrap:wrap;">
+      {% if page_obj.has_previous %}
+        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.previous_page_number }}"
+           style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#4f46e5;font-size:0.8rem;font-weight:600;text-decoration:none;">
+          <i class="fas fa-chevron-left" style="font-size:0.7rem;"></i> Prev
+        </a>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:#4f46e5;color:#fff;font-size:0.82rem;font-weight:700;">{{ num }}</span>
+        {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+          <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ num }}"
+             style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#475569;font-size:0.82rem;font-weight:600;text-decoration:none;">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.next_page_number }}"
+           style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#4f46e5;font-size:0.8rem;font-weight:600;text-decoration:none;">
+          Next <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+        </a>
+      {% endif %}
+      <span style="font-size:0.75rem;color:#94a3b8;margin-left:0.5rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    </div>
+    {% endif %}
   </div>
 </div>
 

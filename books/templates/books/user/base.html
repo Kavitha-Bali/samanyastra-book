@@ -4,7 +4,66 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{% block title %}Samanyastra{% endblock %}</title>
+
+  <!-- Microsoft Clarity -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "pxqgr57nuo");
+  </script>
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NKZXYT37PZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NKZXYT37PZ');
+  </script>
+
+  <!-- Primary SEO -->
+  <title>{% block title %}Samanyastra – Technical Books, Exam Prep & Coding Interview Resources{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Buy technical books, exam preparation materials, and coding interview guides on Python, Java, JavaScript, C++, Data Structures, Algorithms and more. Instant digital download.{% endblock %}"/>
+  <meta name="keywords" content="{% block meta_keywords %}technical books, programming books, python books, java books, javascript books, data structures, algorithms, coding interview preparation, exam prep, MCQ practice, computer science books, buy ebooks online, samanyastra{% endblock %}"/>
+  <meta name="author" content="Samanyastra"/>
+  <meta name="robots" content="index, follow"/>
+  <link rel="canonical" href="{% block canonical %}https://books.samanyastra.com{% endblock %}"/>
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}"/>
+  <meta property="og:site_name" content="Samanyastra"/>
+  <meta property="og:title" content="{% block og_title %}Samanyastra – Technical Books & Coding Interview Prep{% endblock %}"/>
+  <meta property="og:description" content="{% block og_description %}Discover top technical books, exam preparation materials and coding interview guides. Python, Java, JavaScript, DSA and more — instant digital download.{% endblock %}"/>
+  <meta property="og:url" content="{% block og_url %}https://books.samanyastra.com{% endblock %}"/>
+  <meta property="og:image" content="{% block og_image %}{% static 'books/logo_color.png' %}{% endblock %}"/>
+  <meta property="og:locale" content="en_IN"/>
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="{% block twitter_title %}Samanyastra – Technical Books & Coding Interview Prep{% endblock %}"/>
+  <meta name="twitter:description" content="{% block twitter_description %}Buy Python, Java, JavaScript books and exam prep materials. Instant download after purchase.{% endblock %}"/>
+  <meta name="twitter:image" content="{% block twitter_image %}{% static 'books/logo_color.png' %}{% endblock %}"/>
+
+  <!-- JSON-LD structured data -->
+  {% block structured_data %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Samanyastra",
+    "url": "https://books.samanyastra.com",
+    "description": "Technical books, exam preparation materials, and coding interview guides.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://books.samanyastra.com/shop/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  {% endblock %}
+
   <link rel="icon" type="image/jpeg" href="{% static 'books/favicon.jpg' %}"/>
   <link rel="apple-touch-icon" href="{% static 'books/favicon.jpg' %}"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>

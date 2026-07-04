@@ -14,11 +14,13 @@ urlpatterns = [
     path('panel/',                              views.panel_dashboard,    name='panel-dashboard'),
     path('panel/books/',                        views.panel_books,        name='panel-books'),
     path('panel/books/add/',                    views.panel_book_add,     name='panel-book-add'),
+    path('panel/books/regenerate-all-thumbnails/', views.panel_regenerate_all_thumbnails, name='panel-regenerate-all-thumbnails'),
     path('panel/books/<int:book_id>/edit/',     views.panel_book_edit,         name='panel-book-edit'),
     path('panel/books/<int:book_id>/delete/',   views.panel_book_delete,       name='panel-book-delete'),
-    path('panel/books/<int:book_id>/cover/',           views.panel_book_cover_upload,   name='panel-book-cover'),
-    path('panel/books/<int:book_id>/previews/',        views.panel_book_preview_upload, name='panel-book-previews'),
-    path('panel/books/image/<int:image_id>/delete/',   views.panel_book_image_delete,   name='panel-book-image-delete'),
+    path('panel/books/<int:book_id>/cover/',           views.panel_book_cover_upload,        name='panel-book-cover'),
+    path('panel/books/<int:book_id>/previews/',        views.panel_book_preview_upload,      name='panel-book-previews'),
+    path('panel/books/<int:book_id>/regenerate-thumbnail/', views.panel_regenerate_thumbnail, name='panel-regenerate-thumbnail'),
+    path('panel/books/image/<int:image_id>/delete/',   views.panel_book_image_delete,        name='panel-book-image-delete'),
     path('panel/users/',                        views.panel_users,        name='panel-users'),
     path('panel/users/<int:user_id>/delete/',   views.panel_user_delete,  name='panel-user-delete'),
     path('panel/transactions/',                 views.panel_transactions, name='panel-transactions'),
@@ -49,6 +51,10 @@ urlpatterns = [
     path('shop/book/<int:book_id>/checkout/',     views.razorpay_create_order,       name='razorpay-create-order'),
     path('shop/book/<int:book_id>/verify/',       views.razorpay_verify_payment,     name='razorpay-verify-payment'),
     path('shop/book/<int:book_id>/download/',     views.download_book,             name='download-book'),
+
+    # ── SEO ──
+    path('robots.txt',  views.robots_txt,  name='robots-txt'),
+    path('sitemap.xml', views.sitemap_xml, name='sitemap-xml'),
 
     # ── REST API ──
     path('api/books/',                          views.api_books,              name='api-books'),

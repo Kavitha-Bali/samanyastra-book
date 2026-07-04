@@ -13,8 +13,8 @@ if _env_file.exists():
 
 # ── Secrets ──────────────────────────────────────────────────
 SECRET_KEY = env("SECRET_KEY", default="insecure-build-placeholder")
-DEBUG = False
-ALLOWED_HOSTS      = env.list("ALLOWED_HOSTS", default=[]) + [".samanyastra.com"]
+DEBUG = env.bool("DEBUG", default=False)
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["127.0.0.1", "localhost"]) + [".samanyastra.com"]
 CSRF_TRUSTED_ORIGINS = ["https://*.samanyastra.com"]
 
 # ── Applications ─────────────────────────────────────────────
@@ -95,6 +95,11 @@ STATIC_URL  = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_ROOT  = BASE_DIR / "media"
 
+# ManifestStaticFilesStorage raises ValueError on missing files in DEBUG=False.
+# CompressedStaticFilesStorage is safer — no manifest strict checking.
+if not DEBUG:
+    WHITENOISE_MANIFEST_STRICT = False
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ── Messages ──────────────────────────────────────────────────
@@ -115,7 +120,7 @@ REST_FRAMEWORK = {
 }
 
 # ── Razorpay ──────────────────────────────────────────────────
-RAZORPAY_KEY_ID     = env("RAZORPAY_KEY",     default="")
+RAZORPAY_KEY_ID     = env("RAZORPAY_KEY",    default="")
 RAZORPAY_KEY_SECRET = env("RAZORPAY_SECRET", default="")
 
 # ── Outlook ──────────────────────────────────────────────────
@@ -128,6 +133,25 @@ CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="")
 CELERY_TIMEZONE   = TIME_ZONE
 
 
+
+# ── Logging ──────────────────────────────────────────────────
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {"format": "{levelname} {asctime} {module} {message}", "style": "{"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "verbose"},
+    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {
+        "django":             {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "django.request":     {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "django.template":    {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "django.db.backends": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+    },
+}
 
 # ── Azure Storage (media only) ────────────────────────────────
 AZURE_ACCOUNT_NAME      = env("AZURE_ACCOUNT_NAME",      default="")
@@ -151,3 +175,5 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+
+# print(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, "++++++++++")

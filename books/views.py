@@ -1,4 +1,6 @@
-from django.db.models import Count
+from django.db.models import Count, Q
+from django.db import models
+from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -8,8 +10,9 @@ from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.utils import timezone
-from django.http import JsonResponse, FileResponse
+from django.http import JsonResponse, FileResponse, HttpResponse
 from django.conf import settings
+from django.views.decorators.cache import cache_control
 from decimal import Decimal
 import json
 import hmac
@@ -76,30 +79,23 @@ staff_only = user_passes_test(lambda u: u.is_staff, login_url="panel-login")
 # ════════════════════════════════════
 def home(request):
     q = request.GET.get("q", "").strip()
-    books = Books.objects.filter(title__icontains=q) if q else Books.objects.all()
+    qs = Books.objects.filter(title__icontains=q) if q else Books.objects.all()
     cart_ids = (
         list(Cart.objects.filter(user=request.user).values_list("book_id", flat=True))
-        if request.user.is_authenticated
-        else []
+        if request.user.is_authenticated else []
     )
     purchased_ids = (
-        list(
-            Transaction.objects.filter(user=request.user).values_list(
-                "book_id", flat=True
-            )
-        )
-        if request.user.is_authenticated
-        else []
+        list(Transaction.objects.filter(user=request.user, status=Transaction.STATUS_COMPLETED).values_list("book_id", flat=True))
+        if request.user.is_authenticated else []
     )
-    return render(
-        request,
-        "books/home.html",
-        {
-            "books": books,
-            "cart_ids": cart_ids,
-            "purchased_ids": purchased_ids,
-        },
-    )
+    page_obj = Paginator(qs, 20).get_page(request.GET.get("page"))
+    return render(request, "books/home.html", {
+        "books": page_obj,
+        "page_obj": page_obj,
+        "cart_ids": cart_ids,
+        "purchased_ids": purchased_ids,
+        "q": q,
+    })
 
 
 def home_add_cart(request, book_id):
@@ -115,15 +111,8 @@ def home_buy_now(request, book_id):
     if not request.user.is_authenticated:
         return redirect(f"/login/?next=/")
     book = get_object_or_404(Books, id=book_id)
-    if not Transaction.objects.filter(user=request.user, book=book).exists():
-        Transaction.objects.create(
-            user=request.user, book=book, amount_paid=book.amount
-        )
-        Cart.objects.filter(user=request.user, book=book).delete()
-        messages.success(request, f'"{book.title}" purchased successfully!')
-    else:
-        messages.info(request, f'You already purchased "{book.title}".')
-    return redirect("user-transactions")
+    Cart.objects.get_or_create(user=request.user, book=book)
+    return redirect("user-cart")
 
 
 # ════════════════════════════════════
@@ -159,16 +148,17 @@ def panel_logout(request):
 @login_required(login_url="panel-login")
 @staff_only
 def panel_dashboard(request):
+    completed_txns = Transaction.objects.filter(status=Transaction.STATUS_COMPLETED)
     return render(
         request,
         "books/panel/dashboard.html",
         {
             "book_count": Books.objects.count(),
             "user_count": User.objects.filter(is_staff=False).count(),
-            "txn_count": Transaction.objects.count(),
+            "txn_count": completed_txns.count(),
             "promo_count": Promocode.objects.count(),
             "recent_books": Books.objects.order_by("-id")[:6],
-            "recent_txns": Transaction.objects.select_related("user", "book").order_by(
+            "recent_txns": completed_txns.select_related("user", "book").order_by(
                 "-transaction_date"
             )[:5],
         },
@@ -178,10 +168,14 @@ def panel_dashboard(request):
 @login_required(login_url="panel-login")
 @staff_only
 def panel_books(request):
-    books = Books.objects.annotate(preview_count=Count("images")).order_by("title")
+    books = Books.objects.annotate(
+        preview_count=Count("images"),
+        copies_sold=Count("transaction", filter=models.Q(transaction__status="completed")),
+    ).order_by("title")
     total = books.count()
     covers_count = books.exclude(cover_image="").exclude(cover_image=None).count()
     no_cover_count = total - covers_count
+    total_sold = sum(b.copies_sold for b in books)
     return render(
         request,
         "books/panel/books_list.html",
@@ -189,6 +183,7 @@ def panel_books(request):
             "books": books,
             "covers_count": covers_count,
             "no_cover_count": no_cover_count,
+            "total_sold": total_sold,
         },
     )
 
@@ -258,6 +253,35 @@ def panel_book_edit(request, book_id):
             "preview_images": book.images.all(),
         },
     )
+
+
+@login_required(login_url="panel-login")
+@staff_only
+def panel_regenerate_thumbnail(request, book_id):
+    from .signals import build_thumbnail
+    book = get_object_or_404(Books, id=book_id)
+    if not book.cover_image:
+        messages.error(request, f'"{book.title}" has no cover image to generate thumbnail from.')
+        return redirect('panel-books')
+    success = build_thumbnail(book)
+    if success:
+        messages.success(request, f'Thumbnail regenerated for "{book.title}".')
+    else:
+        messages.error(request, f'Thumbnail generation failed for "{book.title}".')
+    return redirect('panel-books')
+
+
+@login_required(login_url="panel-login")
+@staff_only
+def panel_regenerate_all_thumbnails(request):
+    if request.method != 'POST':
+        return redirect('panel-books')
+    from .signals import build_thumbnail
+    books = Books.objects.exclude(cover_image='').exclude(cover_image=None)
+    total = books.count()
+    count = sum(1 for book in books if build_thumbnail(book))
+    messages.success(request, f'Regenerated thumbnails for {count}/{total} books.')
+    return redirect('panel-books')
 
 
 @login_required(login_url="panel-login")
@@ -350,9 +374,8 @@ def panel_transactions(request):
         request,
         "books/panel/transactions_list.html",
         {
-            "transactions": Transaction.objects.select_related("user", "book").order_by(
-                "-transaction_date"
-            )
+            "transactions": Transaction.objects.filter(status=Transaction.STATUS_COMPLETED)
+                .select_related("user", "book").order_by("-transaction_date")
         },
     )
 
@@ -627,25 +650,19 @@ def forgot_password(request):
 @login_required(login_url="user-login")
 def user_home(request):
     q = request.GET.get("q", "").strip()
-    books = Books.objects.filter(title__icontains=q) if q else Books.objects.all()
-    cart_ids = list(
-        Cart.objects.filter(user=request.user).values_list("book_id", flat=True)
-    )
-    purchased_ids = list(
-        Transaction.objects.filter(user=request.user).values_list("book_id", flat=True)
-    )
-    return render(
-        request,
-        "books/user/home.html",
-        {
-            "books": books,
-            "cart_ids": cart_ids,
-            "purchased_ids": purchased_ids,
-            "q": q,
-            "genres": BOOK_GENRES,
-            "total_books": Books.objects.count(),
-        },
-    )
+    qs = Books.objects.filter(title__icontains=q) if q else Books.objects.all()
+    cart_ids = list(Cart.objects.filter(user=request.user).values_list("book_id", flat=True))
+    purchased_ids = list(Transaction.objects.filter(user=request.user, status=Transaction.STATUS_COMPLETED).values_list("book_id", flat=True))
+    page_obj = Paginator(qs, 20).get_page(request.GET.get("page"))
+    return render(request, "books/user/home.html", {
+        "books": page_obj,
+        "page_obj": page_obj,
+        "cart_ids": cart_ids,
+        "purchased_ids": purchased_ids,
+        "q": q,
+        "genres": BOOK_GENRES,
+        "total_books": Books.objects.count(),
+    })
 
 
 @login_required(login_url="user-login")
@@ -654,7 +671,7 @@ def user_book_detail(request, book_id):
     ratings = Rating.objects.filter(book=book).select_related("user")
     user_rating = ratings.filter(user=request.user).first()
     in_cart = Cart.objects.filter(user=request.user, book=book).exists()
-    purchased = Transaction.objects.filter(user=request.user, book=book).exists()
+    purchased = Transaction.objects.filter(user=request.user, book=book, status=Transaction.STATUS_COMPLETED).exists()
     return render(
         request,
         "books/user/book_detail.html",
@@ -717,50 +734,21 @@ def user_cart(request):
 def purchase_book(request, book_id):
     book = get_object_or_404(Books, id=book_id)
     if request.method == "POST":
-        if not Transaction.objects.filter(user=request.user, book=book).exists():
-            Transaction.objects.create(
-                user=request.user, book=book, amount_paid=book.amount
-            )
-            Cart.objects.filter(user=request.user, book=book).delete()
-            messages.success(request, f'"{book.title}" purchased successfully!')
-        return redirect("user-transactions")
+        Cart.objects.get_or_create(user=request.user, book=book)
+        return redirect("user-cart")
     return redirect("user-book-detail", book_id=book_id)
 
 
 @login_required(login_url="user-login")
 def purchase_cart(request):
-    if request.method == "POST":
-        cart_items = Cart.objects.filter(user=request.user).select_related("book")
-        promo_code = request.POST.get("promo_code", "").strip().upper()
-        discount = Decimal("0")
-        if promo_code:
-            try:
-                promo = Promocode.objects.get(code=promo_code)
-                if promo.expiration_date >= timezone.now().date():
-                    discount = promo.discount_percentage
-            except Promocode.DoesNotExist:
-                pass
-        for item in cart_items:
-            if not Transaction.objects.filter(
-                user=request.user, book=item.book
-            ).exists():
-                paid = item.book.amount - (item.book.amount * discount / 100)
-                Transaction.objects.create(
-                    user=request.user,
-                    book=item.book,
-                    amount_paid=paid,
-                    promo_used=promo_code or None,
-                )
-        cart_items.delete()
-        messages.success(request, "Purchase successful! Thank you.")
-        return redirect("user-transactions")
+    # Legacy non-Razorpay path — redirect to cart for proper payment
     return redirect("user-cart")
 
 
 @login_required(login_url="user-login")
 def user_transactions(request):
     txns = (
-        Transaction.objects.filter(user=request.user)
+        Transaction.objects.filter(user=request.user, status=Transaction.STATUS_COMPLETED)
         .select_related("book")
         .order_by("-transaction_date")
     )
@@ -808,6 +796,7 @@ def razorpay_create_cart_order(request):
             "user_name": request.user.get_full_name() or request.user.username,
             "user_email": request.user.email,
             "promo_code": promo_code,
+            "razorpay_order_id": order["id"],
         }
     )
 
@@ -838,15 +827,20 @@ def razorpay_verify_cart_payment(request):
                 discount = promo.discount_percentage
         except Promocode.DoesNotExist:
             pass
+    razorpay_order_id = data.get("razorpay_order_id", "") or order_id
     for item in cart_items:
-        if not Transaction.objects.filter(user=request.user, book=item.book).exists():
-            paid = item.book.amount - (item.book.amount * discount / 100)
-            Transaction.objects.create(
-                user=request.user,
-                book=item.book,
-                amount_paid=paid,
-                promo_used=promo_code or None,
-            )
+        paid = item.book.amount - (item.book.amount * discount / 100)
+        txn, _ = Transaction.objects.get_or_create(
+            user=request.user,
+            book=item.book,
+            defaults={"amount_paid": paid, "promo_used": promo_code or None, "razorpay_order_id": razorpay_order_id},
+        )
+        if txn.status != Transaction.STATUS_COMPLETED:
+            txn.status = Transaction.STATUS_COMPLETED
+            txn.amount_paid = paid
+            txn.promo_used = promo_code or None
+            txn.razorpay_order_id = razorpay_order_id
+            txn.save(update_fields=["status", "amount_paid", "promo_used", "razorpay_order_id"])
     cart_items.delete()
     return JsonResponse({"success": True, "redirect": "/shop/transactions/"})
 
@@ -878,6 +872,7 @@ def razorpay_create_order(request, book_id):
             "book_title": book.title,
             "user_name": request.user.get_full_name() or request.user.username,
             "user_email": request.user.email,
+            "razorpay_order_id": order["id"],
         }
     )
 
@@ -899,7 +894,16 @@ def razorpay_verify_payment(request, book_id):
         return JsonResponse(
             {"success": False, "error": "Invalid signature"}, status=400
         )
-    Transaction.objects.create(user=request.user, book=book, amount_paid=book.amount)
+    txn, _ = Transaction.objects.get_or_create(
+        user=request.user,
+        book=book,
+        defaults={"amount_paid": book.amount, "razorpay_order_id": order_id},
+    )
+    if txn.status != Transaction.STATUS_COMPLETED:
+        txn.status = Transaction.STATUS_COMPLETED
+        txn.amount_paid = book.amount
+        txn.razorpay_order_id = order_id
+        txn.save(update_fields=["status", "amount_paid", "razorpay_order_id"])
     Cart.objects.filter(user=request.user, book=book).delete()
     return JsonResponse({"success": True, "redirect": "/shop/transactions/"})
 
@@ -907,7 +911,7 @@ def razorpay_verify_payment(request, book_id):
 @login_required(login_url="user-login")
 def download_book(request, book_id):
     book = get_object_or_404(Books, id=book_id)
-    if not Transaction.objects.filter(user=request.user, book=book).exists():
+    if not Transaction.objects.filter(user=request.user, book=book, status=Transaction.STATUS_COMPLETED).exists():
         messages.error(request, "Please purchase this book before downloading.")
         return redirect("user-book-detail", book_id=book_id)
     if not book.file:
@@ -921,7 +925,7 @@ def download_book(request, book_id):
 @login_required(login_url="user-login")
 def rate_book(request, book_id):
     book = get_object_or_404(Books, id=book_id)
-    if not Transaction.objects.filter(user=request.user, book=book).exists():
+    if not Transaction.objects.filter(user=request.user, book=book, status=Transaction.STATUS_COMPLETED).exists():
         messages.error(request, "You can only rate purchased books.")
         return redirect("user-book-detail", book_id=book_id)
     if request.method == "POST":
@@ -934,6 +938,57 @@ def rate_book(request, book_id):
         return redirect("user-book-detail", book_id=book_id)
     existing = Rating.objects.filter(user=request.user, book=book).first()
     return render(request, "books/user/rate.html", {"book": book, "existing": existing})
+
+
+# ════════════════════════════════════
+#  SEO — robots.txt & sitemap.xml
+# ════════════════════════════════════
+
+@cache_control(max_age=86400)
+def robots_txt(request):
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /panel/",
+        "Disallow: /admin/",
+        "Disallow: /shop/cart/",
+        "Disallow: /shop/transactions/",
+        "Disallow: /shop/purchase/",
+        "Disallow: /api/",
+        "",
+        "Sitemap: https://books.samanyastra.com/sitemap.xml",
+    ]
+    return HttpResponse("\n".join(lines), content_type="text/plain")
+
+
+@cache_control(max_age=3600)
+def sitemap_xml(request):
+    books = Books.objects.only("id", "published_date").order_by("-id")
+    base = "https://books.samanyastra.com"
+    urls = [
+        {"loc": f"{base}/shop/",     "changefreq": "daily",   "priority": "1.0", "lastmod": ""},
+        {"loc": f"{base}/register/", "changefreq": "monthly", "priority": "0.5", "lastmod": ""},
+        {"loc": f"{base}/login/",    "changefreq": "monthly", "priority": "0.5", "lastmod": ""},
+    ]
+    for book in books:
+        urls.append({
+            "loc": f"{base}/shop/book/{book.id}/",
+            "changefreq": "weekly",
+            "priority": "0.9",
+            "lastmod": book.published_date.strftime("%Y-%m-%d") if book.published_date else "",
+        })
+    xml_parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+                 '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for u in urls:
+        xml_parts.append("  <url>")
+        xml_parts.append(f"    <loc>{u['loc']}</loc>")
+        if u["lastmod"]:
+            xml_parts.append(f"    <lastmod>{u['lastmod']}</lastmod>")
+        xml_parts.append(f"    <changefreq>{u['changefreq']}</changefreq>")
+        xml_parts.append(f"    <priority>{u['priority']}</priority>")
+        xml_parts.append("  </url>")
+    xml_parts.append("</urlset>")
+    return HttpResponse("\n".join(xml_parts), content_type="application/xml")
 
 
 # ════════════════════════════════════

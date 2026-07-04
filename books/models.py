@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -12,8 +13,9 @@ class Books(models.Model):
     pages = models.IntegerField()
     amount = models.DecimalField(max_digits=8, decimal_places=2)
     published_date = models.DateField( models.DateField, auto_now_add=True)
-    cover_image = models.ImageField(upload_to="covers/", blank=True, null=True)
-    thumb = models.URLField(blank=True, null=True)
+    cover_image     = models.ImageField(upload_to="covers/", blank=True, null=True)
+    # cover_thumbnail = models.ImageField(upload_to="covers/thumbs/", blank=True, null=True)
+    thumb           = models.URLField(blank=True, null=True)
     file = models.FileField(upload_to="books/", blank=True, null=True)
     tags = models.CharField(max_length=400, blank=True, default='')
 
@@ -68,6 +70,13 @@ class Cart(models.Model):
 
 
 class Transaction(models.Model):
+    STATUS_PENDING = 'pending'
+    STATUS_COMPLETED = 'completed'
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_COMPLETED, 'Completed'),
+    ]
+
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="transactions"
     )
@@ -75,6 +84,9 @@ class Transaction(models.Model):
     amount_paid = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     transaction_date = models.DateTimeField(auto_now_add=True)
     promo_used = models.CharField(max_length=20, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    transaction_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    razorpay_order_id = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.username} — {self.book.title}"
