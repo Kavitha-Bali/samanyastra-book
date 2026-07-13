@@ -5,6 +5,7 @@ from django.http import Http404, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from books.models import Transaction, Books
 from azure.storage.blob import BlobServiceClient
+from django.contrib.auth.decorators import login_not_required
 
 
 def _blob_client(blob_path):
@@ -14,7 +15,7 @@ def _blob_client(blob_path):
     )
     return client.get_blob_client(container=settings.AZURE_CONTAINER_MEDIA, blob=blob_path)
 
-
+@login_not_required
 def serve_media(request, path):
     """Proxy /media/* — streams from Azure, never exposes blob URL."""
     try:
@@ -43,8 +44,14 @@ def protected_book_file(request, filename):
 
 
 urlpatterns = [
+    # books.urls must come first: both it and sso_integration.urls register
+    # "logout/", and books.views.user_logout is the one that clears the
+    # Django session *and* the SSO JWT cookies. If sso_integration's own
+    # logout/ matched first it would only clear the JWT cookies and leave
+    # the sessionid cookie (and any locally-authenticated user) logged in.
     path('admin/', admin.site.urls),
     path('', include('books.urls')),
+    path("", include("sso_integration.urls")),
     path('', include('django_messaging.urls')),
     re_path(r'^media/books/(?P<filename>.+)$', protected_book_file),
     re_path(r'^media/(?P<path>.+)$', serve_media),

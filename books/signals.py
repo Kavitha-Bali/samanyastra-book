@@ -76,13 +76,12 @@ def build_thumbnail(book):
 
 @receiver(post_save, sender=Books)
 def generate_cover_thumbnail(sender, instance, **kwargs):
-    """Fire async Celery task to generate thumbnail whenever a book is saved with a cover."""
+    """Generate thumbnail whenever a book is saved with a cover."""
     if not instance.cover_image:
         return
     if instance.cover_thumbnail:
         return
-    from .tasks import generate_thumbnail_task
-    generate_thumbnail_task.delay(instance.pk)
+    build_thumbnail(instance)
 
 
 def _thumb_filename(original_name):

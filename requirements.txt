@@ -12,9 +12,6 @@ requests==2.34.2
 sqlparse==0.5.5
 tzdata==2026.2
 urllib3==2.7.0
-celery==5.4.0
-redis==5.2.1
-django-celery-results==2.5.1
 whitenoise==6.9.0
 gunicorn
 

@@ -17,6 +17,13 @@ DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["127.0.0.1", "localhost"]) + [".samanyastra.com"]
 CSRF_TRUSTED_ORIGINS = ["https://*.samanyastra.com"]
 
+# The k8s ingress terminates TLS and forwards plain HTTP to this pod, so Django
+# must be told to trust X-Forwarded-Proto — otherwise request.is_secure() is
+# always False, reset-link emails are built as http://, and the CSRF Origin
+# check compares against the wrong scheme.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+
 # ── Applications ─────────────────────────────────────────────
 INSTALLED_APPS = [
      "corsheaders",
@@ -29,6 +36,7 @@ INSTALLED_APPS = [
     "books",
     "rest_framework",
     "django_messaging",
+    'sso_integration',
 ]
 
 MIDDLEWARE = [
@@ -38,9 +46,14 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "sso_integration.middleware.JWTCookieMiddleware",
+    # Gates every view behind request.user.is_authenticated by default.
+    # Views that must stay public opt out with @login_not_required.
+    # Must run after JWTCookieMiddleware so it sees the JWT-resolved user.
+    "django.contrib.auth.middleware.LoginRequiredMiddleware",
 ]
 
 ROOT_URLCONF = "samanyastra_book.urls"
@@ -66,7 +79,7 @@ WSGI_APPLICATION = "samanyastra_book.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME":     env("BOOKS_DB_NAME",     default=""),
+        "NAME":     env("DB_NAME",     default=""),
         "USER":     env("DB_USER",     default=""),
         "PASSWORD": env("DB_PASSWORD", default=""),
         "HOST":     env("DB_HOST",     default=""),
@@ -86,7 +99,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # ── Internationalisation ──────────────────────────────────────
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
 USE_TZ = True
 
@@ -128,9 +141,16 @@ OUTLOOK_TENANT_ID     = env("OUTLOOK_TENANT_ID",     default="")
 OUTLOOK_CLIENT_ID     = env("OUTLOOK_CLIENT_ID",     default="")
 OUTLOOK_CLIENT_SECRET = env("OUTLOOK_CLIENT_SECRET", default="")
 
-# ── Celery ────────────────────────────────────────────────────
-CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="")
-CELERY_TIMEZONE   = TIME_ZONE
+# Not used for actual Celery config anywhere — the vendored django_messaging
+# package's __init__.py does a hard `is None` check on this setting at import
+# time even though its OutlookBackend sends mail synchronously via requests.
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="not-used")
+
+# ── Mail Service ──────────────────────────────────────────────
+MAIL_SERVICE_URL        = env("MAIL_SERVICE_URL", default="http://127.0.0.1:8000")
+MAIL_SERVICE_APP_ID     = env("MAIL_SERVICE_APP_ID", default="")
+MAIL_SERVICE_APP_SECRET = env("MAIL_SERVICE_APP_SECRET", default="")
+MAIL_SERVICE_FROM_EMAIL = env("DEFAULT_FROM_MAIL", default="noreply@samanyastra.com")
 
 
 
@@ -144,12 +164,12 @@ LOGGING = {
     "handlers": {
         "console": {"class": "logging.StreamHandler", "formatter": "verbose"},
     },
-    "root": {"handlers": ["console"], "level": "WARNING"},
+    "root": {"handlers": ["console"], "level": "DEBUG" if DEBUG else "ERROR"},
     "loggers": {
-        "django":             {"handlers": ["console"], "level": "WARNING", "propagate": False},
-        "django.request":     {"handlers": ["console"], "level": "WARNING", "propagate": False},
-        "django.template":    {"handlers": ["console"], "level": "WARNING", "propagate": False},
-        "django.db.backends": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "django":             {"handlers": ["console"], "level": "DEBUG" if DEBUG else "ERROR", "propagate": False},
+        "django.request":     {"handlers": ["console"], "level": "DEBUG" if DEBUG else "ERROR", "propagate": False},
+        "django.template":    {"handlers": ["console"], "level": "DEBUG" if DEBUG else "ERROR", "propagate": False},
+        "django.db.backends": {"handlers": ["console"], "level": "DEBUG" if DEBUG else "ERROR", "propagate": False},
     },
 }
 
@@ -176,4 +196,18 @@ STORAGES = {
     },
 }
 
-# print(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, "++++++++++")
+
+# SSO Integration
+LOGIN_URL = env("DJANGO_LOGIN_URL", default=None) or None
+LOGIN_REDIRECT_URL = env("DJANGO_LOGIN_REDIRECT_URL", default=None) or None
+
+# Samanyastra Auth integration
+SAMANYASTRA_AUTH_URL = env("SAMANYASTRA_AUTH_URL")
+SAMANYASTRA_APP_ID = env("SAMANYASTRA_APP_ID")
+SAMANYASTRA_APP_SECRET = env("SAMANYASTRA_APP_SECRET")
+SAMANYASTRA_REDIRECT_URI = env("SAMANYASTRA_REDIRECT_URI")
+
+# Local JWT settings
+JWT_SECRET = env("JWT_SECRET")
+JWT_ACCESS_EXPIRE_MINUTES = env.int("JWT_ACCESS_EXPIRE_MINUTES", default=15)
+JWT_REFRESH_EXPIRE_DAYS = env.int("JWT_REFRESH_EXPIRE_DAYS", default=7)

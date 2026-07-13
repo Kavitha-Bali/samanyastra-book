@@ -3,7 +3,7 @@ from django.db import models
 from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required, login_not_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.validators import UnicodeUsernameValidator
@@ -22,6 +22,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
+from sso_integration.session import establish_session, clear_session, revoke_refresh_token_cookie
+
 import secrets
 from .models import (
     Books,
@@ -38,7 +40,7 @@ from .models import (
     Rating,
     Promocode,
 )
-from .tasks import send_email
+from .mailer import send_email
 
 BOOK_GENRES = [
     "Fiction",
@@ -77,6 +79,7 @@ staff_only = user_passes_test(lambda u: u.is_staff, login_url="panel-login")
 # ════════════════════════════════════
 #  PUBLIC HOME
 # ════════════════════════════════════
+@login_not_required
 def home(request):
     q = request.GET.get("q", "").strip()
     qs = Books.objects.filter(title__icontains=q) if q else Books.objects.all()
@@ -98,6 +101,7 @@ def home(request):
     })
 
 
+@login_not_required
 def home_add_cart(request, book_id):
     if not request.user.is_authenticated:
         return redirect(f"/login/?next=/")
@@ -107,6 +111,7 @@ def home_add_cart(request, book_id):
     return redirect("/")
 
 
+@login_not_required
 def home_buy_now(request, book_id):
     if not request.user.is_authenticated:
         return redirect(f"/login/?next=/")
@@ -120,6 +125,7 @@ def home_buy_now(request, book_id):
 # ════════════════════════════════════
 
 
+@login_not_required
 def panel_login(request):
     if request.user.is_authenticated:
         if request.user.is_staff:
@@ -140,6 +146,7 @@ def panel_login(request):
     return render(request, "books/panel/login.html", {"error": error})
 
 
+@login_not_required
 def panel_logout(request):
     logout(request)
     return redirect("panel-login")
@@ -437,6 +444,7 @@ def panel_promo_delete(request, promo_id):
 # ════════════════════════════════════
 
 
+@login_not_required
 def user_register(request):
     if request.user.is_authenticated:
         return redirect("user-home")
@@ -491,6 +499,7 @@ def user_register(request):
     )
 
 
+@login_not_required
 def user_login(request):
     if request.user.is_authenticated:
         return redirect("user-home")
@@ -503,89 +512,23 @@ def user_login(request):
         )
         if u:
             login(request, u)
+            # response = redirect(next_url or settings.LOGIN_REDIRECT_URL)
+            # establish_session(response, u, auth_source="local")
             return redirect("user-home")
         error = "Invalid username or password."
     return render(request, "books/user/login.html", {"error": error})
 
 
+@login_not_required
 def user_logout(request):
+    revoke_refresh_token_cookie(request.COOKIES.get("refresh_token", ""))
     logout(request)
-    return redirect("user-login")
+    response = redirect("user-login")
+    clear_session(response)
+    return response
 
 
-def reset_password(request, token):
-    token_obj = (
-        PasswordResetToken.objects.filter(token=token, is_expired=False)
-        .select_related("user")
-        .first()
-    )
-
-    if token_obj is None:
-        return render(request, "books/user/token_invalid.html")
-
-    error = None
-    if request.method == "POST":
-        # Re-validate token on submit to prevent replay after expiry
-        token_obj = (
-            PasswordResetToken.objects.filter(token=token, is_expired=False)
-            .select_related("user")
-            .first()
-        )
-        if token_obj is None:
-            return render(request, "books/user/token_invalid.html")
-
-        password = request.POST.get("password", "")
-        password2 = request.POST.get("password2", "")
-        user = token_obj.user
-
-        if not password:
-            error = "Password cannot be empty."
-        elif len(password) < 8:
-            error = "Password must be at least 8 characters."
-        elif password != password2:
-            error = "Passwords do not match."
-        elif user.check_password(password):
-            error = "New password must be different from your current password."
-        else:
-            user.set_password(password)
-            user.save()
-            token_obj.is_expired = True
-            token_obj.save()
-            messages.success(request, "Password reset successful. Please log in.")
-            return redirect("user-login")
-
-    return render(
-        request, "books/user/reset_password.html", {"token": token, "error": error}
-    )
-
-
-def forgot_password(request):
-    if request.method == "POST":
-        email = request.POST.get("email", "").strip()
-        user = User.objects.filter(email=email).first()
-        if user:
-            # Expire any existing tokens for this user
-            PasswordResetToken.objects.filter(user=user, is_expired=False).update(
-                is_expired=True
-            )
-
-            token = secrets.token_hex(16)  # 32-char hex string
-            PasswordResetToken.objects.create(user=user, token=token)
-
-            reset_link = request.build_absolute_uri(f"/reset-password/{token}/")
-            send_email.delay(
-                "forgot_password",
-                user.email,
-                user_name=user.get_full_name() or user.username,
-                reset_link=reset_link,
-            )
-
-        # Always show success to avoid email enumeration
-        messages.success(request, "If that email exists, a reset link has been sent.")
-        return redirect("forgot-password")
-    return render(request, "books/user/forgot_password.html")
-
-
+@login_not_required
 def reset_password(request, token):
     token_obj = PasswordResetToken.objects.filter(token=token, is_expired=False).select_related('user').first()
 
@@ -622,6 +565,7 @@ def reset_password(request, token):
     return render(request, 'books/user/reset_password.html', {'token': token, 'error': error})
 
 
+@login_not_required
 def forgot_password(request):
     if request.method == 'POST':
         email = request.POST.get('email', '').strip()
@@ -634,7 +578,7 @@ def forgot_password(request):
             PasswordResetToken.objects.create(user=user, token=token)
 
             reset_link = request.build_absolute_uri(f'/reset-password/{token}/')
-            send_email.delay('forgot_password', user.email, user_name=user.get_full_name() or user.username, reset_link=reset_link)
+            send_email('forgot_password', user.email, user_name=user.get_full_name() or user.username, reset_link=reset_link)
 
         # Always show success to avoid email enumeration
         messages.success(request, 'If that email exists, a reset link has been sent.')
@@ -944,6 +888,7 @@ def rate_book(request, book_id):
 #  SEO — robots.txt & sitemap.xml
 # ════════════════════════════════════
 
+@login_not_required
 @cache_control(max_age=86400)
 def robots_txt(request):
     lines = [
@@ -961,6 +906,7 @@ def robots_txt(request):
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 
+@login_not_required
 @cache_control(max_age=3600)
 def sitemap_xml(request):
     books = Books.objects.only("id", "published_date").order_by("-id")
