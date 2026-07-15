@@ -9,3 +9,12 @@ class ProxiedAzureStorage(AzureStorage):
     """
     def url(self, name):
         return f"{settings.MEDIA_URL}{name}"
+
+
+class ProxiedAzureStaticStorage(AzureStorage):
+    """
+    Stores static files in Azure Blob Storage but returns /static/<name>
+    so all static assets are served through Django's proxy view, never directly.
+    """
+    def url(self, name):
+        return f"{settings.STATIC_URL}{name}"

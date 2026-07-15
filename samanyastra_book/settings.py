@@ -42,7 +42,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -108,11 +107,6 @@ STATIC_URL  = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_ROOT  = BASE_DIR / "media"
 
-# ManifestStaticFilesStorage raises ValueError on missing files in DEBUG=False.
-# CompressedStaticFilesStorage is safer — no manifest strict checking.
-if not DEBUG:
-    WHITENOISE_MANIFEST_STRICT = False
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ── Messages ──────────────────────────────────────────────────
@@ -173,11 +167,12 @@ LOGGING = {
     },
 }
 
-# ── Azure Storage (media only) ────────────────────────────────
+# ── Azure Storage (media + static) ────────────────────────────
 AZURE_ACCOUNT_NAME      = env("AZURE_ACCOUNT_NAME",      default="")
 AZURE_ACCOUNT_KEY       = env("AZURE_ACCOUNT_KEY",       default="")
 AZURE_CONNECTION_STRING = env("AZURE_CONNECTION_STRING", default="")
 AZURE_CONTAINER_MEDIA   = "media"
+AZURE_CONTAINER_STATIC  = "static"
 
 MEDIA_URL = "/media/"
 
@@ -192,14 +187,24 @@ STORAGES = {
         },
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "books.storage.ProxiedAzureStaticStorage",
+        "OPTIONS": {
+            "azure_container": AZURE_CONTAINER_STATIC,
+            "account_name": AZURE_ACCOUNT_NAME,
+            "account_key": AZURE_ACCOUNT_KEY,
+            "connection_string": AZURE_CONNECTION_STRING,
+        },
     },
 }
 
 
 # SSO Integration
-LOGIN_URL = env("DJANGO_LOGIN_URL", default=None) or None
-LOGIN_REDIRECT_URL = env("DJANGO_LOGIN_REDIRECT_URL", default=None) or None
+# Defaults must never be None: sso_integration.views.callback_view does
+# `redirect(next_url or settings.LOGIN_REDIRECT_URL)` with no None-check,
+# so a missing env var here crashes the callback for any user who logs in
+# without a `?next=` (i.e. anyone who didn't get bounced off a protected page).
+LOGIN_URL =  "/login/"
+LOGIN_REDIRECT_URL ="/shop/"
 
 # Samanyastra Auth integration
 SAMANYASTRA_AUTH_URL = env("SAMANYASTRA_AUTH_URL")

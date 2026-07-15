@@ -21,3 +21,4 @@ azure-storage-blob==12.25.0
 django-storages==1.14.5
 django-cors-headers==4.6.0
 ./django_messaging-0.1-py3-none-any.whl
+./samanyastra_sso_integration-0.1.0-py3-none-any.whl

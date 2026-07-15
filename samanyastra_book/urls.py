@@ -8,18 +8,35 @@ from azure.storage.blob import BlobServiceClient
 from django.contrib.auth.decorators import login_not_required
 
 
-def _blob_client(blob_path):
+def _blob_client(blob_path, container=None):
     client = BlobServiceClient(
         account_url=f"https://{settings.AZURE_ACCOUNT_NAME}.blob.core.windows.net",
         credential=settings.AZURE_ACCOUNT_KEY,
     )
-    return client.get_blob_client(container=settings.AZURE_CONTAINER_MEDIA, blob=blob_path)
+    return client.get_blob_client(container=container or settings.AZURE_CONTAINER_MEDIA, blob=blob_path)
 
 @login_not_required
 def serve_media(request, path):
     """Proxy /media/* — streams from Azure, never exposes blob URL."""
     try:
         download = _blob_client(path).download_blob()
+        props = download.properties
+        content_type = (props.get('content_settings') or {}).get('content_type') or 'application/octet-stream'
+        return StreamingHttpResponse(download.chunks(), content_type=content_type)
+    except Exception:
+        raise Http404
+
+
+@login_not_required
+def serve_static(request, path):
+    """Proxy /static/* — streams from Azure, never exposes blob URL.
+
+    Must stay open (login_not_required): LoginRequiredMiddleware gates every
+    view by default, and CSS/JS/login-page assets must load before a user
+    is authenticated.
+    """
+    try:
+        download = _blob_client(path, container=settings.AZURE_CONTAINER_STATIC).download_blob()
         props = download.properties
         content_type = (props.get('content_settings') or {}).get('content_type') or 'application/octet-stream'
         return StreamingHttpResponse(download.chunks(), content_type=content_type)
@@ -55,4 +72,5 @@ urlpatterns = [
     path('', include('django_messaging.urls')),
     re_path(r'^media/books/(?P<filename>.+)$', protected_book_file),
     re_path(r'^media/(?P<path>.+)$', serve_media),
+    re_path(r'^static/(?P<path>.+)$', serve_static),
 ]
