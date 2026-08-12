@@ -16,18 +16,19 @@
 </head>
 <body>
 
+<a class="skip-link" href="#books">Skip to books</a>
+
 <!-- NAV -->
-<nav>
+<nav aria-label="Main navigation">
   <a class="logo" href="/">
     <img src="{% static 'books/logo_color.png' %}" alt="Samanyastra Logo" class="logo-img"/>
-    <!-- <span class="logo-icon"><i class="fas fa-book-open"></i></span>
-    <span class="logo-text">Saman<span>yastra</span></span> -->
   </a>
 
   <div class="nav-center">
-    <form class="search-box" method="get" action="/">
-      <input type="text" name="q" placeholder="Search books, authors…" value="{{ request.GET.q }}"/>
-      <button type="submit"><i class="fas fa-search"></i></button>
+    <form class="search-box" method="get" action="/" role="search">
+      <input type="text" name="q" placeholder="Search books, authors…" value="{{ request.GET.q }}" aria-label="Search books and authors"/>
+      {% if request.GET.q %}<a href="/" class="search-clear" aria-label="Clear search"><i class="fas fa-xmark"></i></a>{% endif %}
+      <button type="submit" aria-label="Search"><i class="fas fa-search"></i></button>
     </form>
   </div>
 
@@ -49,7 +50,7 @@
         <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </a>
     {% endif %}
-    <div class="hamburger" onclick="toggleSearch()" title="Search">
+    <div class="hamburger" onclick="toggleSearch()" title="Search" role="button" tabindex="0" aria-expanded="false" aria-controls="mobileSearch">
       <span></span><span></span><span></span>
     </div>
   </div>
@@ -57,22 +58,24 @@
 
 <!-- Mobile Search -->
 <div class="mobile-search" id="mobileSearch">
-  <form class="search-box" method="get" action="/">
-    <input type="text" name="q" placeholder="Search books…" value="{{ request.GET.q }}"/>
-    <button type="submit"><i class="fas fa-search"></i></button>page
+  <form class="search-box" method="get" action="/" role="search">
+    <input type="text" name="q" placeholder="Search books…" value="{{ request.GET.q }}" aria-label="Search books"/>
+    {% if request.GET.q %}<a href="/" class="search-clear" aria-label="Clear search"><i class="fas fa-xmark"></i></a>{% endif %}
+    <button type="submit" aria-label="Search"><i class="fas fa-search"></i></button>
   </form>
 </div>
 
-<!-- Messages -->
+<!-- Toasts (from Django messages) -->
 {% if messages %}
-<div style="max-width:1200px;margin:0.8rem auto;padding:0 1.5rem;">
+<div class="toast-stack" id="toastStack">
   {% for msg in messages %}
-  <div class="alert alert-{% if msg.tags == 'success' %}success{% elif msg.tags == 'error' %}danger{% else %}info{% endif %} alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+  <div class="toast-msg toast-{% if msg.tags == 'success' %}success{% elif msg.tags == 'error' %}error{% elif msg.tags == 'warning' %}warning{% else %}info{% endif %}" role="status">
     {% if msg.tags == 'success' %}<i class="fas fa-check-circle"></i>
     {% elif msg.tags == 'error' %}<i class="fas fa-exclamation-circle"></i>
+    {% elif msg.tags == 'warning' %}<i class="fas fa-triangle-exclamation"></i>
     {% else %}<i class="fas fa-info-circle"></i>{% endif %}
     <span>{{ msg }}</span>
-    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    <button type="button" class="toast-close" aria-label="Dismiss">&times;</button>
   </div>
   {% endfor %}
 </div>
@@ -80,44 +83,84 @@
 
 <!-- HERO -->
 <div class="hero">
-  <div class="hero-content">
-    <h1>Your Trusted Store for <span>Books</span></h1>
-    <p>Thousands of titles across every genre — at the best prices.</p>
-    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
-      <a href="#books" class="hero-btn"><i class="fas fa-book-open me-2"></i>Browse Books</a>
-      {% if not request.user.is_authenticated %}
-        <a href="{% url 'user-register' %}" class="hero-btn" style="background:linear-gradient(135deg,#4ecdc4,#2980b9);"><i class="fas fa-user-plus me-2"></i>Register Free</a>
-      {% endif %}
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <span class="hero-eyebrow"><i class="fas fa-magnifying-glass"></i> 10,000+ titles, one search away</span>
+      <h1>Your Trusted Store for <span>Books</span></h1>
+      <p>Thousands of titles across every genre — at the best prices, delivered to your door.</p>
+      <div class="hero-actions">
+        <a href="#books" class="hero-btn"><i class="fas fa-book-open me-2"></i>Browse Books</a>
+        {% if not request.user.is_authenticated %}
+          <a href="{% url 'user-register' %}" class="hero-btn hero-btn--ghost"><i class="fas fa-user-plus me-2"></i>Register Free</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="hero-terminal" aria-hidden="true">
+      <div class="term-titlebar">
+        <span class="term-dot term-dot--red"></span>
+        <span class="term-dot term-dot--amber"></span>
+        <span class="term-dot term-dot--green"></span>
+        <span class="term-path">samanyastra — search</span>
+      </div>
+      <pre class="term-body"><code id="termLines">$ samanyastra search --for "your next favourite book"
+→ scanning 10,000+ titles across every genre
+→ sorted by rating, price and relevance
+→ free delivery unlocked above ₹499
+$ ready when you are</code></pre>
     </div>
   </div>
-</div>
-
-
-
-<!-- TRUST BAR -->
-<div class="trust-bar">
-  <span class="trust-item"><i class="fas fa-check-circle"></i> 10,000+ Books</span>
-  <span class="trust-item"><i class="fas fa-truck"></i> Free Delivery above ₹499</span>
-  <span class="trust-item"><i class="fas fa-lock"></i> Secure Payments</span>
-  <span class="trust-item"><i class="fas fa-undo"></i> Easy Returns</span>
 </div>
 
 <!-- BOOKS SECTION -->
 <div class="section-wrapper" id="books">
   <div class="section">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.6rem;flex-wrap:wrap;gap:1rem;">
+    <div class="section-header">
       <div class="section-title">Featured Books</div>
       {% if request.user.is_authenticated %}
-        <a href="{% url 'user-home' %}" style="background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;padding:8px 20px;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;"><i class="fas fa-store me-1"></i>View Full Shop</a>
+        <a href="{% url 'user-home' %}" class="btn-pill btn-pill--shop"><i class="fas fa-store me-1"></i>View Full Shop</a>
       {% else %}
-        <a href="{% url 'user-login' %}" style="background:linear-gradient(135deg,#ff6b35,#c0392b);color:#fff;padding:8px 20px;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;"><i class="fas fa-sign-in-alt me-1"></i>Login to Buy</a>
+        <a href="{% url 'user-login' %}" class="btn-pill btn-pill--login"><i class="fas fa-sign-in-alt me-1"></i>Login to Buy</a>
       {% endif %}
     </div>
+
+    {% if books %}
+    <div class="toolbar" id="booksToolbar">
+      <div class="toolbar-bar">
+        <span class="toolbar-label"><i class="fas fa-book"></i> {{ page_obj.paginator.count }} book{{ page_obj.paginator.count|pluralize }} found</span>
+        <div class="toolbar-controls">
+          <button type="button" class="filter-toggle" id="navMenuTrigger" aria-expanded="false" aria-controls="navMenuPanel">
+            <i class="fas fa-sliders"></i> Filter
+          </button>
+          <div class="sort-control">
+            <label for="sortSelect">Sort</label>
+            <select id="sortSelect">
+              <option value="default">Featured</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="rating-desc">Top Rated</option>
+              <option value="title-asc">Title: A–Z</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="chip-row" id="navMenuPanel">
+        <div class="chips" id="langChips">
+          <button type="button" class="chip active" data-lang="all">All languages</button>
+        </div>
+        <button type="button" class="chip-reset" id="resetFilters"><i class="fas fa-rotate-left"></i> Reset</button>
+      </div>
+    </div>
+    <p class="no-filter-matches" id="noFilterMatches" hidden><i class="fas fa-circle-info"></i> No books match this filter.</p>
+    {% endif %}
 
     <div class="books-grid">
       {% if books %}
         {% for book in books %}
-        <div class="card">
+        <div class="card" data-language="{{ book.language }}" data-price="{{ book.amount }}" data-rating="{{ book.avg_rating }}" data-title="{{ book.title }}" data-book-id="{{ book.id }}">
+          <button type="button" class="wishlist-btn" aria-label="Save {{ book.title }} for later" aria-pressed="false">
+            <i class="fa-regular fa-heart"></i>
+          </button>
           {% if book.cover_image %}
             <a href="{% if request.user.is_authenticated %}{% url 'user-book-detail' book.id %}{% else %}{% url 'user-login' %}{% endif %}">
               <img class="card-thumb" src="{{ book.cover_url }}" alt="{{ book.title }}" loading="lazy"/>
@@ -138,7 +181,17 @@
             <div class="card-author">{{ book.author }}</div>
             <div class="card-price-row">
               <span class="card-price">₹{{ book.amount }}</span>
-              <span style="font-size:0.72rem;color:#f59e0b;"><i class="fas fa-star"></i> {{ book.avg_rating }}</span>
+              <span>
+                {% if book.avg_rating %}
+                <span class="stars" title="{{ book.avg_rating }} out of 5">
+                  <span class="stars-track">★★★★★</span>
+                  <span class="stars-fg" data-pct="{% widthratio book.avg_rating 5 100 %}">★★★★★</span>
+                </span>
+                <span class="rating-num">{{ book.avg_rating }}</span>
+                {% else %}
+                <span class="no-rating">No ratings yet</span>
+                {% endif %}
+              </span>
             </div>
           </div>
 
@@ -148,13 +201,13 @@
                 <span class="btn btn-cart" style="cursor:default;opacity:0.7;"><i class="fas fa-check me-1"></i>Purchased</span>
                 <a href="{% url 'user-transactions' %}" class="btn btn-buy"><i class="fas fa-receipt me-1"></i>My Orders</a>
               {% else %}
-                <form method="post" action="{% url 'home-add-cart' book.id %}" style="flex:1;">
+                <form method="post" action="{% url 'home-add-cart' book.id %}" class="btn-form" style="flex:1;">
                   {% csrf_token %}
                   <button type="submit" class="btn btn-cart" style="width:100%;">
                     {% if book.id in cart_ids %}<i class="fas fa-check me-1"></i>In Cart{% else %}<i class="fas fa-cart-plus me-1"></i>Cart{% endif %}
                   </button>
                 </form>
-                <form method="post" action="{% url 'home-buy-now' book.id %}" style="flex:1;">
+                <form method="post" action="{% url 'home-buy-now' book.id %}" class="btn-form" style="flex:1;">
                   {% csrf_token %}
                   <button type="submit" class="btn btn-buy" style="width:100%;"><i class="fas fa-bolt me-1"></i>Buy Now</button>
                 </form>
@@ -167,36 +220,36 @@
         </div>
         {% endfor %}
       {% else %}
-        <div style="grid-column:1/-1;text-align:center;padding:3rem;color:#94a3b8;">
-          <i class="fas fa-book-open" style="font-size:3rem;margin-bottom:1rem;display:block;"></i>
-          <p style="font-size:1rem;">No books found. Try a different search.</p>
+        <div class="empty-state">
+          <i class="fas fa-book-open"></i>
+          <p>No books found{% if request.GET.q %} for "{{ request.GET.q }}"{% endif %}. Try a different search.</p>
+          {% if request.GET.q %}
+            <a href="/" class="empty-state-cta"><i class="fas fa-arrow-left me-1"></i>Browse all books</a>
+          {% endif %}
         </div>
       {% endif %}
     </div>
 
     {% if page_obj.paginator.num_pages > 1 %}
-    <div style="display:flex;align-items:center;justify-content:center;gap:0.4rem;margin-top:2rem;flex-wrap:wrap;">
+    <div class="pagination-bar">
       {% if page_obj.has_previous %}
-        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.previous_page_number }}"
-           style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#4f46e5;font-size:0.8rem;font-weight:600;text-decoration:none;">
+        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.previous_page_number }}" class="page-link">
           <i class="fas fa-chevron-left" style="font-size:0.7rem;"></i> Prev
         </a>
       {% endif %}
       {% for num in page_obj.paginator.page_range %}
         {% if page_obj.number == num %}
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:#4f46e5;color:#fff;font-size:0.82rem;font-weight:700;">{{ num }}</span>
+          <span class="page-num current">{{ num }}</span>
         {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
-          <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ num }}"
-             style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#475569;font-size:0.82rem;font-weight:600;text-decoration:none;">{{ num }}</a>
+          <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ num }}" class="page-num">{{ num }}</a>
         {% endif %}
       {% endfor %}
       {% if page_obj.has_next %}
-        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.next_page_number }}"
-           style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#4f46e5;font-size:0.8rem;font-weight:600;text-decoration:none;">
+        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.next_page_number }}" class="page-link">
           Next <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
         </a>
       {% endif %}
-      <span style="font-size:0.75rem;color:#94a3b8;margin-left:0.5rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      <span class="page-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
     </div>
     {% endif %}
   </div>
@@ -204,28 +257,55 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-logo">
-    <span class="logo-icon"><i class="fas fa-book-open"></i></span>
-    <span class="logo-text">Saman<span>yastra</span></span>
-  </div>
-  <div class="footer-tagline">Your trusted online bookstore — discover, read, grow.</div>
-  <div class="footer-links">
-    <a href="/"><i class="fas fa-home me-1"></i>Home</a>
-    <a href="{% url 'user-register' %}"><i class="fas fa-user-plus me-1"></i>Register</a>
-    <a href="{% url 'user-login' %}"><i class="fas fa-sign-in-alt me-1"></i>Login</a>
-    <a href="{% url 'user-cart' %}"><i class="fas fa-shopping-cart me-1"></i>Cart</a>
-    {% if request.user.is_staff %}
-      <a href="{% url 'panel-dashboard' %}"><i class="fas fa-cog me-1"></i>Admin Panel</a>
-    {% endif %}
+  <div class="footer-inner">
+    <div class="footer-col footer-brand">
+      <div class="footer-logo">
+        <span class="logo-icon"><i class="fas fa-book-open"></i></span>
+        <span class="logo-text">Saman<span>yastra</span></span>
+      </div>
+      <p class="footer-tagline">Your trusted online bookstore — discover, read, grow.</p>
+      <div class="footer-payments">
+        <span class="footer-payments-label">Secure checkout</span>
+        <div class="payment-icons">
+          <i class="fa-brands fa-cc-visa" title="Visa"></i>
+          <i class="fa-brands fa-cc-mastercard" title="Mastercard"></i>
+          <i class="fa-solid fa-indian-rupee-sign" title="UPI"></i>
+          <i class="fa-solid fa-shield-halved" title="Razorpay Secured"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="/"><i class="fas fa-home me-1"></i>Home</a>
+      <a href="#books"><i class="fas fa-book me-1"></i>Featured Books</a>
+      {% if request.user.is_authenticated %}
+        <a href="{% url 'user-home' %}"><i class="fas fa-store me-1"></i>Full Shop</a>
+      {% endif %}
+    </div>
+
+    <div class="footer-col">
+      <h4>Account</h4>
+      <a href="{% url 'user-cart' %}"><i class="fas fa-shopping-cart me-1"></i>Cart</a>
+      {% if request.user.is_authenticated %}
+        <a href="{% url 'user-transactions' %}"><i class="fas fa-receipt me-1"></i>My Orders</a>
+      {% else %}
+        <a href="{% url 'user-register' %}"><i class="fas fa-user-plus me-1"></i>Register</a>
+        <a href="{% url 'user-login' %}"><i class="fas fa-sign-in-alt me-1"></i>Login</a>
+      {% endif %}
+      {% if request.user.is_staff %}
+        <a href="{% url 'panel-dashboard' %}"><i class="fas fa-cog me-1"></i>Admin Panel</a>
+      {% endif %}
+    </div>
   </div>
   <div class="footer-copy">&copy; 2025 <strong>Samanyastra</strong>. All rights reserved.</div>
 </footer>
 
+<button type="button" id="backToTop" class="back-to-top" aria-label="Back to top">
+  <i class="fas fa-arrow-up"></i>
+</button>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-  function toggleSearch() {
-    document.getElementById('mobileSearch').classList.toggle('open');
-  }
-</script>
+<script src="{% static 'books/home.js' %}"></script>
 </body>
 </html>
