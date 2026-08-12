@@ -7,63 +7,177 @@
   <title>Admin Login – Samanyastra</title>
   <link rel="icon" type="image/jpeg" href="{% static 'books/favicon.jpg' %}"/>
   <link rel="apple-touch-icon" href="{% static 'books/favicon.jpg' %}"/>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <link rel="stylesheet" href="{% static 'books/admin.css' %}"/>
+  <link rel="stylesheet" href="{% static 'books/logo.css' %}"/>
   <style>
-    body { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%); min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
-    .auth-card { background: #fff; border-radius: 18px; padding: 2.5rem 2rem; width: 100%; max-width: 400px; box-shadow: 0 24px 64px rgba(0,0,0,0.5); }
-    .auth-logo { font-size: 2.2rem; color: #f59e0b; }
-    .brand-name { font-size: 1.5rem; font-weight: 800; color: #1e293b; }
-    .brand-name span { color: #6366f1; }
-    .input-group-text { background: #f8fafc; border-right: none; color: #94a3b8; }
-    .form-control { border-left: none; }
-    .form-control:focus { box-shadow: none; border-color: #6366f1; }
-    .input-group:focus-within .input-group-text { border-color: #6366f1; color: #6366f1; }
-    .btn-auth { background: linear-gradient(135deg, #6366f1, #4f46e5); border: none; font-weight: 700; padding: 0.7rem; font-size: 1rem; }
-    .btn-auth:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
-    .admin-badge-info { background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; color: #92400e; }
+    .auth-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      background: var(--bg);
+    }
+    .auth-shell {
+      display: flex;
+      width: 100%;
+      max-width: 960px;
+      margin: auto;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 30px 70px rgba(31,41,55,0.22);
+      min-height: 560px;
+    }
+    /* ── Left brand panel ── */
+    .auth-brand {
+      flex: 1 1 44%;
+      background: linear-gradient(155deg, #1F2937 0%, #831843 55%, #E91E63 100%);
+      background-image:
+        radial-gradient(ellipse at 15% 15%, rgba(233,30,99,0.35) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 85%, rgba(99,102,241,0.3) 0%, transparent 55%),
+        linear-gradient(155deg, #1F2937 0%, #831843 55%, #E91E63 100%);
+      color: #fff;
+      padding: 2.8rem 2.6rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+    .auth-brand-top { display: flex; align-items: center; gap: 12px; }
+    .auth-brand-logo-img { height: 34px; width: auto; filter: brightness(0) invert(1); }
+    .auth-brand-name { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.2px; }
+    .auth-brand-name span { color: #fbcfe8; }
+    .auth-brand-mid { margin: 2.2rem 0; }
+    .auth-brand-mid h1 {
+      font-size: 1.7rem;
+      font-weight: 800;
+      line-height: 1.3;
+      letter-spacing: -0.4px;
+      margin-bottom: 0.7rem;
+    }
+    .auth-brand-mid p { font-size: 0.88rem; color: rgba(255,255,255,0.72); line-height: 1.6; max-width: 320px; }
+    .auth-feature-list { display: flex; flex-direction: column; gap: 0.85rem; margin-top: 1.6rem; }
+    .auth-feature {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.88);
+    }
+    .auth-feature i {
+      width: 30px; height: 30px; border-radius: 9px;
+      background: rgba(255,255,255,0.14);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; flex-shrink: 0;
+    }
+    .auth-brand-bottom { font-size: 0.72rem; color: rgba(255,255,255,0.5); }
+
+    /* ── Right form panel ── */
+    .auth-form-panel {
+      flex: 1 1 56%;
+      background: var(--card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem;
+    }
+    .auth-form-inner { width: 100%; max-width: 340px; }
+    .auth-form-eyebrow {
+      font-size: 0.66rem; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--pink); margin-bottom: 0.4rem;
+    }
+    .auth-form-title { font-size: 1.4rem; font-weight: 800; color: var(--text); letter-spacing: -0.3px; margin-bottom: 0.3rem; }
+    .auth-form-sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.6rem; }
+
+    .form-group { position: relative; }
+    .form-group .field-icon {
+      position: absolute; left: 14px; top: 38px;
+      color: #94a3b8; font-size: 0.85rem; pointer-events: none;
+    }
+    .form-group input { padding-left: 2.4rem; }
+    .form-group input:focus + .field-icon,
+    .form-group:focus-within .field-icon { color: var(--pink); }
+
+    .auth-shield-note {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--pink-lt); border: 1px solid #fbcfe8;
+      color: var(--pink-dk); border-radius: 9px;
+      padding: 9px 12px; font-size: 0.76rem; font-weight: 600;
+      margin-bottom: 1.4rem;
+    }
+    .back-to-site {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 1.6rem; font-size: 0.8rem; font-weight: 600;
+      color: var(--muted); text-decoration: none; transition: color 0.15s;
+    }
+    .back-to-site:hover { color: var(--pink); }
+
+    @media (max-width: 800px) {
+      .auth-shell { flex-direction: column; max-width: 440px; min-height: 0; }
+      .auth-brand { padding: 2.2rem; }
+      .auth-brand-mid { margin: 1.2rem 0; }
+      .auth-feature-list { display: none; }
+    }
   </style>
 </head>
-<body class="d-flex align-items-center justify-content-center p-3">
-<div class="auth-card">
-  <div class="text-center mb-4">
-    <div class="auth-logo mb-2"><i class="fas fa-book-open"></i></div>
-    <div class="brand-name">Saman<span>yastra</span></div>
-    <p class="text-muted mt-1" style="font-size:0.85rem;">Admin Panel Access</p>
-  </div>
+<body>
+<div class="auth-screen">
+  <div class="auth-shell">
 
-  <div class="admin-badge-info mb-3 d-flex align-items-center gap-2">
-    <i class="fas fa-shield-alt text-warning"></i>
-    <span>Staff accounts only. Unauthorized access is prohibited.</span>
-  </div>
+    <div class="auth-brand">
+      <div class="auth-brand-top">
+        <img src="{% static 'books/logo_color.png' %}" alt="Samanyastra" class="auth-brand-logo-img"/>
+        <span class="auth-brand-name">Saman<span>yastra</span></span>
+      </div>
 
-  {% if error %}
-    <div class="alert alert-danger d-flex align-items-center gap-2 py-2" role="alert">
-      <i class="fas fa-exclamation-circle"></i> {{ error }}
+      <div class="auth-brand-mid">
+        <h1>Manage your store from one professional dashboard.</h1>
+        <p>Sign in with your staff credentials to manage books, users, transactions and promo codes.</p>
+
+        <div class="auth-feature-list">
+          <div class="auth-feature"><i class="fas fa-book"></i> Catalogue &amp; cover management</div>
+          <div class="auth-feature"><i class="fas fa-credit-card"></i> Live transaction tracking</div>
+          <div class="auth-feature"><i class="fas fa-tag"></i> Promo code control</div>
+        </div>
+      </div>
+
+      <div class="auth-brand-bottom">&copy; 2025 Samanyastra. Staff access only.</div>
     </div>
-  {% endif %}
 
-  <form method="post">
-    {% csrf_token %}
-    <div class="mb-3">
-      <label class="form-label fw-semibold text-muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;">Username</label>
-      <div class="input-group">
-        <span class="input-group-text"><i class="fas fa-user-shield"></i></span>
-        <input type="text" name="username" class="form-control" placeholder="Admin username" required autofocus/>
+    <div class="auth-form-panel">
+      <div class="auth-form-inner">
+        <div class="auth-form-eyebrow">Admin Panel</div>
+        <div class="auth-form-title">Welcome back</div>
+        <div class="auth-form-sub">Sign in to continue to your dashboard.</div>
+
+        <div class="auth-shield-note">
+          <i class="fas fa-shield-alt"></i>
+          <span>Staff accounts only. Unauthorized access is prohibited.</span>
+        </div>
+
+        {% if error %}
+          <div class="error-msg"><i class="fas fa-exclamation-circle me-1"></i> {{ error }}</div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" name="username" placeholder="Admin username" required autofocus/>
+            <i class="fas fa-user-shield field-icon"></i>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" placeholder="Admin password" required/>
+            <i class="fas fa-lock field-icon"></i>
+          </div>
+          <button type="submit" class="btn-login">
+            <i class="fas fa-sign-in-alt me-2"></i>Login to Panel
+          </button>
+        </form>
+
+        <a href="/" class="back-to-site"><i class="fas fa-arrow-left"></i> Back to website</a>
       </div>
     </div>
-    <div class="mb-4">
-      <label class="form-label fw-semibold text-muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;">Password</label>
-      <div class="input-group">
-        <span class="input-group-text"><i class="fas fa-lock"></i></span>
-        <input type="password" name="password" class="form-control" placeholder="Admin password" required/>
-      </div>
-    </div>
-    <button type="submit" class="btn btn-auth btn-primary w-100 text-white">
-      <i class="fas fa-sign-in-alt me-2"></i>Login to Panel
-    </button>
-  </form>
+
+  </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

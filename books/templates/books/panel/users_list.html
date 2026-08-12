@@ -4,26 +4,123 @@
 {% block nav_users %}active{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <h1><i class="fas fa-users me-2" style="color:#6366f1;"></i><span>Users</span></h1>
+<style>
+  .us-banner {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 55%, #8b5cf6 100%);
+    border-radius: 16px;
+    padding: 1.7rem 2rem;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    position: relative; overflow: hidden;
+    box-shadow: 0 8px 28px rgba(79,70,229,0.35);
+  }
+  .us-banner::before { content:''; position:absolute; width:280px; height:280px; background:rgba(255,255,255,0.06); border-radius:50%; right:-60px; top:-100px; }
+  .us-banner::after { content:''; position:absolute; width:160px; height:160px; background:rgba(255,255,255,0.04); border-radius:50%; right:160px; bottom:-60px; }
+  .us-banner-inner { position: relative; z-index: 1; }
+  .us-eyebrow { font-size: 0.58rem; color: rgba(255,255,255,0.55); letter-spacing: 3px; text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem; }
+  .us-banner-title { font-size: 1.55rem; font-weight: 800; color: #fff; letter-spacing: -0.4px; margin-bottom: 0.25rem; line-height: 1.2; }
+  .us-banner-sub { font-size: 0.82rem; color: rgba(255,255,255,0.65); }
+
+  .us-stats { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .us-stat-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 0.8rem 1.2rem; display: flex; align-items: center; gap: 0.75rem;
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06); flex-shrink: 0; min-width: 150px;
+  }
+  .us-stat-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .us-stat-num { font-size: 1.35rem; font-weight: 800; color: #1e293b; line-height: 1; }
+  .us-stat-lbl { font-size: 0.68rem; color: #94a3b8; font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .us-toolbar { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+  .us-search-wrap {
+    display: flex; align-items: center; gap: 0.55rem;
+    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 9px;
+    padding: 0.52rem 1rem; flex: 1; max-width: 400px;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .us-search-wrap:focus-within { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+  .us-search-wrap i { color: #94a3b8; font-size: 0.82rem; }
+  .us-search-wrap input { border: none; outline: none; background: transparent; font-size: 0.85rem; color: #1e293b; font-family: inherit; width: 100%; }
+  .us-badge { background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; border-radius: 20px; padding: 4px 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+
+  .us-avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.82rem; font-weight: 800; color: #fff;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+  }
+  .us-name-cell { display: flex; align-items: center; gap: 0.65rem; }
+  .us-username { font-size: 0.86rem; font-weight: 700; color: #1e293b; }
+
+  tbody tr.us-row { transition: background 0.12s; }
+  tbody tr.us-row:hover { background: #f5f5ff; }
+
+  .us-empty-cell { text-align: center; padding: 3.5rem 2rem; }
+  .us-empty-icon { width: 72px; height: 72px; background: #eef2ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.8rem; color: #6366f1; }
+</style>
+
+<!-- BANNER -->
+<div class="us-banner">
+  <div class="us-banner-inner">
+    <div class="us-eyebrow">Customer Management</div>
+    <div class="us-banner-title"><i class="fas fa-users me-2" style="opacity:0.85;"></i>Registered Users</div>
+    <div class="us-banner-sub">{{ users.count }} user{{ users.count|pluralize }} registered &middot; Monitor accounts &amp; access</div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="us-stats">
+  <div class="us-stat-card">
+    <div class="us-stat-icon" style="background:#eef2ff;color:#6366f1;"><i class="fas fa-users"></i></div>
+    <div><div class="us-stat-num">{{ users.count }}</div><div class="us-stat-lbl">Total Users</div></div>
+  </div>
+  <div class="us-stat-card">
+    <div class="us-stat-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-user-check"></i></div>
+    <div><div class="us-stat-num">{{ active_count }}</div><div class="us-stat-lbl">Active</div></div>
+  </div>
+  <div class="us-stat-card">
+    <div class="us-stat-icon" style="background:#fee2e2;color:#dc2626;"><i class="fas fa-user-slash"></i></div>
+    <div><div class="us-stat-num">{{ inactive_count }}</div><div class="us-stat-lbl">Inactive</div></div>
+  </div>
+  <div class="us-stat-card">
+    <div class="us-stat-icon" style="background:#fff7ed;color:#c2410c;"><i class="fas fa-user-plus"></i></div>
+    <div><div class="us-stat-num">{{ new_this_month }}</div><div class="us-stat-lbl">New This Month</div></div>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="us-toolbar">
+  <div class="us-search-wrap">
+    <i class="fas fa-search"></i>
+    <input type="text" id="userSearch" placeholder="Search by username or email…" oninput="filterUsers(this.value)"/>
+  </div>
+  <span class="us-badge"><i class="fas fa-filter me-1"></i><span id="usBadgeNum">{{ users.count }}</span> users</span>
 </div>
 
 <div class="table-card">
   <div class="table-card-header users">
-    <h2><i class="fas fa-list me-2"></i>All Users ({{ users.count }})</h2>
+    <h2><i class="fas fa-table me-2"></i>All Users
+      <span style="opacity:0.65;font-weight:400;font-size:0.78rem;margin-left:6px;">({{ users.count }})</span>
+    </h2>
   </div>
   <div class="table-responsive">
-    <table>
+    <table id="usersTable">
       <thead>
         <tr>
-          <th>#</th><th>Username</th><th>Email</th><th>Joined</th><th>Status</th><th>Actions</th>
+          <th style="width:44px;text-align:center;">#</th><th>User</th><th>Email</th><th>Joined</th><th>Status</th><th style="text-align:center;">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for u in users %}
-        <tr>
-          <td style="color:#94a3b8;">{{ forloop.counter }}</td>
-          <td><strong><i class="fas fa-user-circle me-1 text-muted"></i>{{ u.username }}</strong></td>
+        <tr class="us-row" data-search="{{ u.username|lower }} {{ u.email|lower|default:'' }}">
+          <td style="color:#94a3b8;text-align:center;font-size:0.78rem;">{{ forloop.counter }}</td>
+          <td>
+            <div class="us-name-cell">
+              <div class="us-avatar">{{ u.username|first|upper }}</div>
+              <span class="us-username">{{ u.username }}</span>
+            </div>
+          </td>
           <td>{{ u.email|default:"—" }}</td>
           <td><i class="fas fa-calendar-alt me-1 text-muted"></i>{{ u.date_joined|date:"d M Y" }}</td>
           <td>
@@ -33,15 +130,42 @@
               <span class="badge badge-red"><i class="fas fa-circle me-1" style="font-size:0.5rem;"></i>Inactive</span>
             {% endif %}
           </td>
-          <td>
-            <a href="{% url 'panel-user-delete' u.id %}" class="btn btn-danger btn-sm"><i class="fas fa-trash me-1"></i>Delete</a>
+          <td style="text-align:center;">
+            <a href="{% url 'panel-user-delete' u.id %}" class="btn btn-del"><i class="fas fa-trash-alt me-1"></i>Delete</a>
           </td>
         </tr>
         {% empty %}
-          <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;"><i class="fas fa-inbox me-2"></i>No users found.</td></tr>
+        <tr>
+          <td colspan="6" class="us-empty-cell">
+            <div class="us-empty-icon"><i class="fas fa-users"></i></div>
+            <strong style="display:block;font-size:1rem;color:#1e293b;margin-bottom:0.35rem;">No users yet</strong>
+            <span style="color:#94a3b8;font-size:0.85rem;">Registered customers will appear here.</span>
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
+
+    <div id="noUserResults" style="display:none;text-align:center;padding:2.5rem 2rem;">
+      <i class="fas fa-search" style="font-size:2rem;color:#c4c9d4;display:block;margin-bottom:0.6rem;"></i>
+      <strong style="color:#475569;">No matching users</strong>
+      <p style="font-size:0.82rem;color:#94a3b8;margin-top:0.2rem;">Try a different search term.</p>
+    </div>
   </div>
 </div>
+
+<script>
+  function filterUsers(q) {
+    const rows = document.querySelectorAll('#usersTable .us-row');
+    const term = q.toLowerCase().trim();
+    let visible = 0;
+    rows.forEach(r => {
+      const match = !term || r.dataset.search.includes(term);
+      r.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    document.getElementById('noUserResults').style.display = (visible === 0 && term) ? 'block' : 'none';
+    document.getElementById('usBadgeNum').textContent = visible;
+  }
+</script>
 {% endblock %}

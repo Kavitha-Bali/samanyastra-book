@@ -4,41 +4,120 @@
 {% block nav_txns %}active{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <h1><i class="fas fa-credit-card me-2" style="color:#10b981;"></i><span>Transactions</span></h1>
+<style>
+  .tx-banner {
+    background: linear-gradient(135deg, #0D9488 0%, #1AB69D 55%, #0ea5e9 100%);
+    border-radius: 16px;
+    padding: 1.7rem 2rem;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    position: relative; overflow: hidden;
+    box-shadow: 0 8px 28px rgba(13,148,136,0.35);
+  }
+  .tx-banner::before { content:''; position:absolute; width:280px; height:280px; background:rgba(255,255,255,0.06); border-radius:50%; right:-60px; top:-100px; }
+  .tx-banner::after { content:''; position:absolute; width:160px; height:160px; background:rgba(255,255,255,0.04); border-radius:50%; right:160px; bottom:-60px; }
+  .tx-banner-inner { position: relative; z-index: 1; }
+  .tx-eyebrow { font-size: 0.58rem; color: rgba(255,255,255,0.55); letter-spacing: 3px; text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem; }
+  .tx-banner-title { font-size: 1.55rem; font-weight: 800; color: #fff; letter-spacing: -0.4px; margin-bottom: 0.25rem; line-height: 1.2; }
+  .tx-banner-sub { font-size: 0.82rem; color: rgba(255,255,255,0.68); }
+
+  .tx-stats { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .tx-stat-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 0.8rem 1.2rem; display: flex; align-items: center; gap: 0.75rem;
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06); flex-shrink: 0; min-width: 150px;
+  }
+  .tx-stat-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .tx-stat-num { font-size: 1.35rem; font-weight: 800; color: #1e293b; line-height: 1; }
+  .tx-stat-lbl { font-size: 0.68rem; color: #94a3b8; font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .tx-toolbar { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+  .tx-search-wrap {
+    display: flex; align-items: center; gap: 0.55rem;
+    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 9px;
+    padding: 0.52rem 1rem; flex: 1; max-width: 400px;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .tx-search-wrap:focus-within { border-color: #0D9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+  .tx-search-wrap i { color: #94a3b8; font-size: 0.82rem; }
+  .tx-search-wrap input { border: none; outline: none; background: transparent; font-size: 0.85rem; color: #1e293b; font-family: inherit; width: 100%; }
+  .tx-badge { background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4; border-radius: 20px; padding: 4px 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+
+  tbody tr.tx-row { transition: background 0.12s; }
+  tbody tr.tx-row:hover { background: #f0fdfa; }
+
+  .tx-empty-cell { text-align: center; padding: 3.5rem 2rem; }
+  .tx-empty-icon { width: 72px; height: 72px; background: #ccfbf1; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.8rem; color: #0D9488; }
+</style>
+
+<!-- BANNER -->
+<div class="tx-banner">
+  <div class="tx-banner-inner">
+    <div class="tx-eyebrow">Payments &amp; Orders</div>
+    <div class="tx-banner-title"><i class="fas fa-credit-card me-2" style="opacity:0.85;"></i>Transactions</div>
+    <div class="tx-banner-sub">{{ transactions.count }} completed order{{ transactions.count|pluralize }} &middot; ₹{{ total_revenue }} total revenue</div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="tx-stats">
+  <div class="tx-stat-card">
+    <div class="tx-stat-icon" style="background:#ccfbf1;color:#0D9488;"><i class="fas fa-receipt"></i></div>
+    <div><div class="tx-stat-num">{{ transactions.count }}</div><div class="tx-stat-lbl">Transactions</div></div>
+  </div>
+  <div class="tx-stat-card">
+    <div class="tx-stat-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-indian-rupee-sign"></i></div>
+    <div><div class="tx-stat-num">₹{{ total_revenue }}</div><div class="tx-stat-lbl">Total Revenue</div></div>
+  </div>
+  <div class="tx-stat-card">
+    <div class="tx-stat-icon" style="background:#fff7ed;color:#c2410c;"><i class="fas fa-tag"></i></div>
+    <div><div class="tx-stat-num">{{ promo_used_count }}</div><div class="tx-stat-lbl">Promo Applied</div></div>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="tx-toolbar">
+  <div class="tx-search-wrap">
+    <i class="fas fa-search"></i>
+    <input type="text" id="txnSearch" placeholder="Search by user, book or transaction ID…" oninput="filterTxns(this.value)"/>
+  </div>
+  <span class="tx-badge"><i class="fas fa-filter me-1"></i><span id="txBadgeNum">{{ transactions.count }}</span> transactions</span>
 </div>
 
 <div class="table-card">
   <div class="table-card-header txns">
-    <h2><i class="fas fa-list me-2"></i>All Transactions ({{ transactions.count }})</h2>
+    <h2><i class="fas fa-table me-2"></i>All Transactions
+      <span style="opacity:0.65;font-weight:400;font-size:0.78rem;margin-left:6px;">({{ transactions.count }})</span>
+    </h2>
   </div>
   <div class="table-responsive">
-    <table>
+    <table id="txnsTable">
       <thead>
         <tr>
-          <th>#</th><th>Txn ID</th><th>User</th><th>Book</th><th>Amount Paid</th><th>Promo Used</th><th>Razorpay Order</th><th>Status</th><th>Date</th>
+          <th style="width:44px;text-align:center;">#</th><th>Txn ID</th><th>User</th><th>Book</th><th>Amount Paid</th><th>Promo Used</th><th>Razorpay Order</th><th>Status</th><th>Date</th>
         </tr>
       </thead>
       <tbody>
         {% for txn in transactions %}
-        <tr>
-          <td style="color:#94a3b8;">{{ forloop.counter }}</td>
-          <td><code style="font-size:0.72rem;color:#6366f1;">{{ txn.transaction_id }}</code></td>
+        <tr class="tx-row" data-search="{{ txn.user.username|lower }} {{ txn.book.title|lower }} {{ txn.transaction_id|lower }}">
+          <td style="color:#94a3b8;text-align:center;font-size:0.78rem;">{{ forloop.counter }}</td>
+          <td><code style="font-size:0.72rem;color:#0D9488;">{{ txn.transaction_id }}</code></td>
           <td><strong><i class="fas fa-user-circle me-1 text-muted"></i>{{ txn.user.username }}</strong></td>
-          <td>{{ txn.book.title }}</td>
-          <td><strong style="color:#10b981;">₹{{ txn.amount_paid }}</strong></td>
+          <td>{{ txn.book.title|truncatechars:30 }}</td>
+          <td><strong style="color:#059669;">₹{{ txn.amount_paid }}</strong></td>
           <td>
             {% if txn.promo_used %}
               <span class="badge badge-yellow"><i class="fas fa-tag me-1"></i>{{ txn.promo_used }}</span>
             {% else %}
-              <span class="text-muted">—</span>
+              <span style="color:#c4c9d4;">—</span>
             {% endif %}
           </td>
           <td>
             {% if txn.razorpay_order_id %}
               <code style="font-size:0.72rem;color:#0ea5e9;">{{ txn.razorpay_order_id }}</code>
             {% else %}
-              <span class="text-muted">—</span>
+              <span style="color:#c4c9d4;">—</span>
             {% endif %}
           </td>
           <td>
@@ -51,10 +130,37 @@
           <td><i class="fas fa-calendar-alt me-1 text-muted"></i>{{ txn.transaction_date|date:"d M Y, H:i" }}</td>
         </tr>
         {% empty %}
-          <tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:2rem;"><i class="fas fa-inbox me-2"></i>No transactions found.</td></tr>
+        <tr>
+          <td colspan="9" class="tx-empty-cell">
+            <div class="tx-empty-icon"><i class="fas fa-receipt"></i></div>
+            <strong style="display:block;font-size:1rem;color:#1e293b;margin-bottom:0.35rem;">No transactions yet</strong>
+            <span style="color:#94a3b8;font-size:0.85rem;">Completed orders will appear here.</span>
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
+
+    <div id="noTxnResults" style="display:none;text-align:center;padding:2.5rem 2rem;">
+      <i class="fas fa-search" style="font-size:2rem;color:#c4c9d4;display:block;margin-bottom:0.6rem;"></i>
+      <strong style="color:#475569;">No matching transactions</strong>
+      <p style="font-size:0.82rem;color:#94a3b8;margin-top:0.2rem;">Try a different search term.</p>
+    </div>
   </div>
 </div>
+
+<script>
+  function filterTxns(q) {
+    const rows = document.querySelectorAll('#txnsTable .tx-row');
+    const term = q.toLowerCase().trim();
+    let visible = 0;
+    rows.forEach(r => {
+      const match = !term || r.dataset.search.includes(term);
+      r.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    document.getElementById('noTxnResults').style.display = (visible === 0 && term) ? 'block' : 'none';
+    document.getElementById('txBadgeNum').textContent = visible;
+  }
+</script>
 {% endblock %}

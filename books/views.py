@@ -156,6 +156,10 @@ def panel_logout(request):
 @staff_only
 def panel_dashboard(request):
     completed_txns = Transaction.objects.filter(status=Transaction.STATUS_COMPLETED)
+    total_revenue = sum((t.amount_paid or 0) for t in completed_txns)
+    no_cover_count = Books.objects.filter(models.Q(cover_image="") | models.Q(cover_image__isnull=True)).count()
+    today = timezone.now().date()
+    active_promo_count = Promocode.objects.filter(expiration_date__gte=today).count()
     return render(
         request,
         "books/panel/dashboard.html",
@@ -164,6 +168,9 @@ def panel_dashboard(request):
             "user_count": User.objects.filter(is_staff=False).count(),
             "txn_count": completed_txns.count(),
             "promo_count": Promocode.objects.count(),
+            "total_revenue": total_revenue,
+            "no_cover_count": no_cover_count,
+            "active_promo_count": active_promo_count,
             "recent_books": Books.objects.order_by("-id")[:6],
             "recent_txns": completed_txns.select_related("user", "book").order_by(
                 "-transaction_date"
@@ -355,10 +362,18 @@ def panel_book_delete(request, book_id):
 @login_required(login_url="panel-login")
 @staff_only
 def panel_users(request):
+    users = User.objects.filter(is_staff=False).order_by("-date_joined")
+    active_count = users.filter(is_active=True).count()
+    month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     return render(
         request,
         "books/panel/users_list.html",
-        {"users": User.objects.filter(is_staff=False).order_by("-date_joined")},
+        {
+            "users": users,
+            "active_count": active_count,
+            "inactive_count": users.count() - active_count,
+            "new_this_month": users.filter(date_joined__gte=month_start).count(),
+        },
     )
 
 
@@ -377,12 +392,17 @@ def panel_user_delete(request, user_id):
 @login_required(login_url="panel-login")
 @staff_only
 def panel_transactions(request):
+    transactions = Transaction.objects.filter(status=Transaction.STATUS_COMPLETED) \
+        .select_related("user", "book").order_by("-transaction_date")
+    total_revenue = sum((t.amount_paid or 0) for t in transactions)
+    promo_used_count = transactions.exclude(promo_used__isnull=True).exclude(promo_used="").count()
     return render(
         request,
         "books/panel/transactions_list.html",
         {
-            "transactions": Transaction.objects.filter(status=Transaction.STATUS_COMPLETED)
-                .select_related("user", "book").order_by("-transaction_date")
+            "transactions": transactions,
+            "total_revenue": total_revenue,
+            "promo_used_count": promo_used_count,
         },
     )
 
@@ -390,10 +410,21 @@ def panel_transactions(request):
 @login_required(login_url="panel-login")
 @staff_only
 def panel_promos(request):
+    promos = list(Promocode.objects.all().order_by("expiration_date"))
+    today = timezone.now().date()
+    expired_count = 0
+    for p in promos:
+        p.is_expired = p.expiration_date < today
+        if p.is_expired:
+            expired_count += 1
     return render(
         request,
         "books/panel/promos_list.html",
-        {"promos": Promocode.objects.all().order_by("expiration_date")},
+        {
+            "promos": promos,
+            "expired_count": expired_count,
+            "active_count": len(promos) - expired_count,
+        },
     )
 
 

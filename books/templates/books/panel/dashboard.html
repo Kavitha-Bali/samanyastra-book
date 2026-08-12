@@ -4,6 +4,45 @@
 {% block nav_dash %}active{% endblock %}
 
 {% block content %}
+<style>
+  .dash-welcome-badges { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; position: relative; z-index: 1; }
+  .dash-revenue-badge {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 0.6rem 1.1rem;
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+  }
+  .dash-revenue-badge strong { font-size: 0.95rem; font-weight: 800; }
+
+  .stat-card.revenue {
+    background: linear-gradient(135deg, #0ea5e9 0%, #3C81F6 100%);
+    box-shadow: 0 6px 20px rgba(14,165,233,0.38);
+  }
+
+  .dash-alert {
+    display: flex; align-items: center; gap: 0.7rem;
+    background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412;
+    border-radius: 12px; padding: 0.85rem 1.2rem;
+    font-size: 0.82rem; font-weight: 600;
+    margin-bottom: 1.6rem;
+  }
+  .dash-alert i { font-size: 1rem; color: #ea580c; }
+  .dash-alert a { margin-left: auto; color: #c2410c; font-weight: 700; text-decoration: none; white-space: nowrap; }
+  .dash-alert a:hover { text-decoration: underline; }
+
+  .dash-section-label {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: #94a3b8; margin-bottom: 0.6rem;
+  }
+</style>
 
 <!-- Welcome Banner -->
 <div class="dash-welcome">
@@ -12,9 +51,15 @@
     <h1 class="dash-welcome-title">Welcome back, <span>{{ request.user.username }}</span></h1>
     <p class="dash-welcome-text">Here's a summary of your store activity.</p>
   </div>
-  <div class="dash-date-badge">
-    <i class="fas fa-calendar-alt"></i>
-    <span id="dashDate">—</span>
+  <div class="dash-welcome-badges">
+    <div class="dash-revenue-badge">
+      <i class="fas fa-indian-rupee-sign"></i>
+      <strong>₹{{ total_revenue }}</strong>&nbsp;revenue
+    </div>
+    <div class="dash-date-badge">
+      <i class="fas fa-calendar-alt"></i>
+      <span id="dashDate">—</span>
+    </div>
   </div>
 </div>
 
@@ -36,6 +81,14 @@
     <i class="fas fa-tag" style="color:#f59e0b;"></i> Promos
   </a>
 </div>
+
+{% if no_cover_count > 0 %}
+<div class="dash-alert">
+  <i class="fas fa-exclamation-triangle"></i>
+  <span>{{ no_cover_count }} book{{ no_cover_count|pluralize }} missing a cover image — customers may see a placeholder.</span>
+  <a href="{% url 'panel-books' %}">Fix now <i class="fas fa-arrow-right ms-1"></i></a>
+</div>
+{% endif %}
 
 <!-- Stat Cards -->
 <div class="stats-grid">
@@ -60,14 +113,23 @@
       <div class="stat-label">Total Transactions</div>
     </div>
   </div>
+  <div class="stat-card revenue">
+    <span class="stat-icon"><i class="fas fa-indian-rupee-sign"></i></span>
+    <div class="stat-info">
+      <div class="stat-num">₹{{ total_revenue }}</div>
+      <div class="stat-label">Total Revenue</div>
+    </div>
+  </div>
   <div class="stat-card promos">
     <span class="stat-icon"><i class="fas fa-tag"></i></span>
     <div class="stat-info">
       <div class="stat-num">{{ promo_count }}</div>
-      <div class="stat-label">Promo Codes</div>
+      <div class="stat-label">Promo Codes ({{ active_promo_count }} active)</div>
     </div>
   </div>
 </div>
+
+<div class="dash-section-label">Recent Activity</div>
 
 <!-- Two-column layout -->
 <div class="dash-grid">

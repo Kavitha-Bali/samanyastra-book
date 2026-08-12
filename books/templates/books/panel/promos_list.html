@@ -4,27 +4,130 @@
 {% block nav_promos %}active{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <h1><i class="fas fa-tag me-2" style="color:#f59e0b;"></i><span>Promo Codes</span></h1>
-  <a href="{% url 'panel-promo-add' %}" class="btn btn-add">
-    <span class="btn-add-icon"><i class="fas fa-plus"></i></span>
-    Add Promo
-  </a>
+<style>
+  .pr-banner {
+    background: linear-gradient(135deg, #EA580C 0%, #FF723A 55%, #f59e0b 100%);
+    border-radius: 16px;
+    padding: 1.7rem 2rem;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    position: relative; overflow: hidden;
+    box-shadow: 0 8px 28px rgba(234,88,12,0.35);
+  }
+  .pr-banner::before { content:''; position:absolute; width:280px; height:280px; background:rgba(255,255,255,0.06); border-radius:50%; right:-60px; top:-100px; }
+  .pr-banner::after { content:''; position:absolute; width:160px; height:160px; background:rgba(255,255,255,0.04); border-radius:50%; right:160px; bottom:-60px; }
+  .pr-banner-inner { position: relative; z-index: 1; }
+  .pr-eyebrow { font-size: 0.58rem; color: rgba(255,255,255,0.6); letter-spacing: 3px; text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem; }
+  .pr-banner-title { font-size: 1.55rem; font-weight: 800; color: #fff; letter-spacing: -0.4px; margin-bottom: 0.25rem; line-height: 1.2; }
+  .pr-banner-sub { font-size: 0.82rem; color: rgba(255,255,255,0.72); }
+  .pr-banner-actions { position: relative; z-index: 1; flex-shrink: 0; }
+  .btn-add-white {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.18);
+    border: 1.5px solid rgba(255,255,255,0.35);
+    backdrop-filter: blur(8px);
+    color: #fff; border-radius: 10px;
+    padding: 10px 20px; font-size: 0.85rem; font-weight: 700;
+    text-decoration: none; transition: all 0.2s;
+    font-family: inherit;
+  }
+  .btn-add-white:hover { background: rgba(255,255,255,0.28); transform: translateY(-2px); color: #fff; }
+  .btn-add-white .ba-icon {
+    width: 24px; height: 24px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; flex-shrink: 0;
+  }
+
+  .pr-stats { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .pr-stat-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 0.8rem 1.2rem; display: flex; align-items: center; gap: 0.75rem;
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06); flex-shrink: 0; min-width: 150px;
+  }
+  .pr-stat-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .pr-stat-num { font-size: 1.35rem; font-weight: 800; color: #1e293b; line-height: 1; }
+  .pr-stat-lbl { font-size: 0.68rem; color: #94a3b8; font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .pr-toolbar { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+  .pr-search-wrap {
+    display: flex; align-items: center; gap: 0.55rem;
+    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 9px;
+    padding: 0.52rem 1rem; flex: 1; max-width: 340px;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .pr-search-wrap:focus-within { border-color: #EA580C; box-shadow: 0 0 0 3px rgba(234,88,12,0.12); }
+  .pr-search-wrap i { color: #94a3b8; font-size: 0.82rem; }
+  .pr-search-wrap input { border: none; outline: none; background: transparent; font-size: 0.85rem; color: #1e293b; font-family: inherit; width: 100%; }
+  .pr-badge { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; border-radius: 20px; padding: 4px 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+
+  tbody tr.pr-row { transition: background 0.12s; }
+  tbody tr.pr-row:hover { background: #fff7ed; }
+
+  .pr-empty-cell { text-align: center; padding: 3.5rem 2rem; }
+  .pr-empty-icon { width: 72px; height: 72px; background: #ffedd5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.8rem; color: #EA580C; }
+</style>
+
+<!-- BANNER -->
+<div class="pr-banner">
+  <div class="pr-banner-inner">
+    <div class="pr-eyebrow">Discounts &amp; Offers</div>
+    <div class="pr-banner-title"><i class="fas fa-tag me-2" style="opacity:0.85;"></i>Promo Codes</div>
+    <div class="pr-banner-sub">{{ promos|length }} code{{ promos|length|pluralize }} configured &middot; {{ active_count }} currently active</div>
+  </div>
+  <div class="pr-banner-actions">
+    <a href="{% url 'panel-promo-add' %}" class="btn-add-white">
+      <span class="ba-icon"><i class="fas fa-plus"></i></span>
+      Add New Promo
+    </a>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="pr-stats">
+  <div class="pr-stat-card">
+    <div class="pr-stat-icon" style="background:#ffedd5;color:#EA580C;"><i class="fas fa-tags"></i></div>
+    <div><div class="pr-stat-num">{{ promos|length }}</div><div class="pr-stat-lbl">Total Codes</div></div>
+  </div>
+  <div class="pr-stat-card">
+    <div class="pr-stat-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-check-circle"></i></div>
+    <div><div class="pr-stat-num">{{ active_count }}</div><div class="pr-stat-lbl">Active</div></div>
+  </div>
+  <div class="pr-stat-card">
+    <div class="pr-stat-icon" style="background:#fee2e2;color:#dc2626;"><i class="fas fa-calendar-times"></i></div>
+    <div><div class="pr-stat-num">{{ expired_count }}</div><div class="pr-stat-lbl">Expired</div></div>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="pr-toolbar">
+  <div class="pr-search-wrap">
+    <i class="fas fa-search"></i>
+    <input type="text" id="promoSearch" placeholder="Search by code…" oninput="filterPromos(this.value)"/>
+  </div>
+  <span class="pr-badge"><i class="fas fa-filter me-1"></i><span id="prBadgeNum">{{ promos|length }}</span> codes</span>
 </div>
 
 <div class="table-card">
-  <div class="table-card-header promos">
-    <h2><i class="fas fa-list me-2"></i>All Promo Codes ({{ promos.count }})</h2>
+  <div class="table-card-header promos" style="justify-content:space-between;">
+    <h2><i class="fas fa-table me-2"></i>All Promo Codes
+      <span style="opacity:0.65;font-weight:400;font-size:0.78rem;margin-left:6px;">({{ promos|length }})</span>
+    </h2>
+    <a href="{% url 'panel-promo-add' %}" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:7px;padding:4px 12px;font-size:0.73rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">
+      <i class="fas fa-plus" style="font-size:0.62rem;"></i> Add Promo
+    </a>
   </div>
   <div class="table-responsive">
-    <table>
+    <table id="promosTable">
       <thead>
-        <tr><th>#</th><th>Code</th><th>Discount</th><th>Expires</th><th>Actions</th></tr>
+        <tr><th style="width:44px;text-align:center;">#</th><th>Code</th><th>Discount</th><th>Expires</th><th>Status</th><th style="text-align:center;">Actions</th></tr>
       </thead>
       <tbody>
         {% for p in promos %}
-        <tr>
-          <td style="color:#94a3b8;">{{ forloop.counter }}</td>
+        <tr class="pr-row" data-search="{{ p.code|lower }}">
+          <td style="color:#94a3b8;text-align:center;font-size:0.78rem;">{{ forloop.counter }}</td>
           <td>
             <span style="background:#1e1b4b;color:#fbbf24;padding:4px 12px;border-radius:6px;font-family:monospace;font-weight:800;letter-spacing:1px;">
               <i class="fas fa-ticket-alt me-1"></i>{{ p.code }}
@@ -32,16 +135,56 @@
           </td>
           <td><span class="badge badge-orange"><i class="fas fa-percentage me-1"></i>{{ p.discount_percentage }}% OFF</span></td>
           <td><i class="fas fa-calendar-alt me-1 text-muted"></i>{{ p.expiration_date }}</td>
-          <td style="display:flex;gap:6px;align-items:center;">
-            <a href="{% url 'panel-promo-edit' p.id %}" class="btn btn-edit"><i class="fas fa-pen me-1"></i>Edit</a>
-            <a href="{% url 'panel-promo-delete' p.id %}" class="btn btn-del"><i class="fas fa-trash-alt me-1"></i>Delete</a>
+          <td>
+            {% if p.is_expired %}
+              <span class="badge badge-red"><i class="fas fa-calendar-times me-1"></i>Expired</span>
+            {% else %}
+              <span class="badge badge-green"><i class="fas fa-check-circle me-1"></i>Active</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;">
+            <div style="display:flex;gap:6px;align-items:center;justify-content:center;">
+              <a href="{% url 'panel-promo-edit' p.id %}" class="btn btn-edit"><i class="fas fa-pen me-1"></i>Edit</a>
+              <a href="{% url 'panel-promo-delete' p.id %}" class="btn btn-del"><i class="fas fa-trash-alt me-1"></i>Delete</a>
+            </div>
           </td>
         </tr>
         {% empty %}
-          <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem;"><i class="fas fa-inbox me-2"></i>No promo codes found.</td></tr>
+        <tr>
+          <td colspan="6" class="pr-empty-cell">
+            <div class="pr-empty-icon"><i class="fas fa-tag"></i></div>
+            <strong style="display:block;font-size:1rem;color:#1e293b;margin-bottom:0.35rem;">No promo codes yet</strong>
+            <span style="color:#94a3b8;font-size:0.85rem;">Create your first discount code for customers.</span>
+            <br/><br/>
+            <a href="{% url 'panel-promo-add' %}" class="btn btn-add" style="margin:0 auto;">
+              <span class="btn-add-icon"><i class="fas fa-plus"></i></span> Add First Promo
+            </a>
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
+
+    <div id="noPromoResults" style="display:none;text-align:center;padding:2.5rem 2rem;">
+      <i class="fas fa-search" style="font-size:2rem;color:#c4c9d4;display:block;margin-bottom:0.6rem;"></i>
+      <strong style="color:#475569;">No matching promo codes</strong>
+      <p style="font-size:0.82rem;color:#94a3b8;margin-top:0.2rem;">Try a different search term.</p>
+    </div>
   </div>
 </div>
+
+<script>
+  function filterPromos(q) {
+    const rows = document.querySelectorAll('#promosTable .pr-row');
+    const term = q.toLowerCase().trim();
+    let visible = 0;
+    rows.forEach(r => {
+      const match = !term || r.dataset.search.includes(term);
+      r.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    document.getElementById('noPromoResults').style.display = (visible === 0 && term) ? 'block' : 'none';
+    document.getElementById('prBadgeNum').textContent = visible;
+  }
+</script>
 {% endblock %}
